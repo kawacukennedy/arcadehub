@@ -1,0 +1,20 @@
+.button {
+    -fx-background-color: #1a1a1a;
+    -fx-text-fill: white;
+    -fx-font-family: "arcade.ttf"; /* This will be loaded programmatically */
+    -fx-font-size: 16px;
+    -fx-border-color: #3333ff;
+    -fx-border-width: 2px;
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+}
+
+.button:hover {
+    -fx-background-color: #3333ff;
+    -fx-border-color: #0000cc;
+}
+
+.button:pressed {
+    -fx-background-color: #0000cc;
+    -fx-border-color: #3333ff;
+}
