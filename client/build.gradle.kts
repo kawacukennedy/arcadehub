@@ -14,6 +14,16 @@ javafx {
 
 application {
     mainClass.set("com.arcadehub.client.Main")
+    applicationDefaultJvmArgs = listOf(
+        "--module-path", layout.buildDirectory.dir("install/client/lib").get().asFile.absolutePath,
+        "--add-modules", "javafx.controls,javafx.fxml,javafx.media"
+    )
+}
+
+tasks.jar {
+    manifest {
+        attributes["Main-Class"] = "com.arcadehub.client.Main"
+    }
 }
 
 dependencies {
@@ -26,7 +36,9 @@ dependencies {
     // Game Rendering
     implementation("com.badlogicgames.gdx:gdx:$gdxVersion")
     implementation("com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion")
-    runtimeOnly("com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop")
+    runtimeOnly("com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop") {
+        exclude(group = "org.lwjgl", module = "lwjgl-platform")
+    }
 
 
     // JSON Serialization

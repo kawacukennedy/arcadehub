@@ -1,0 +1,12 @@
+# Gradle
+.gradle/
+/build/
+
+# IntelliJ IDEA
+.idea/
+
+# macOS
+.DS_Store
+
+# Local database files
+*.db
