@@ -10,3 +10,6 @@
 
 # Local database files
 *.db
+
+# Client build install directory
+client/build/install/
