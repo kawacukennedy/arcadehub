@@ -3,13 +3,13 @@ plugins {
 }
 
 application {
-    mainClass.set("com.arcadehub.server.core.ServerMain")
+    mainClass.set("com.arcadehub.server.ServerMain")
 }
 
 tasks.register<JavaExec>("runServer") {
     group = "run"
     classpath = files(sourceSets["main"].runtimeClasspath, configurations.runtimeClasspath)
-    mainClass.set("com.arcadehub.server.core.ServerMain")
+    mainClass.set("com.arcadehub.server.ServerMain")
 }
 
 dependencies {

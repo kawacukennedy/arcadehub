@@ -8,12 +8,12 @@ plugins {
 val gdxVersion = "1.12.1"
 
 javafx {
-    version = "20"
+    version = "17.0.2"
     modules = listOf("javafx.controls", "javafx.fxml", "javafx.media")
 }
 
 application {
-    mainClass.set("com.arcadehub.client.Main")
+    mainClass.set("com.arcadehub.client.MainApp")
     applicationDefaultJvmArgs = listOf(
         "--module-path", layout.buildDirectory.dir("install/client/lib").get().asFile.absolutePath,
         "--add-modules", "javafx.controls,javafx.fxml,javafx.media",
@@ -23,7 +23,7 @@ application {
 
 tasks.jar {
     manifest {
-        attributes["Main-Class"] = "com.arcadehub.client.Main"
+        attributes["Main-Class"] = "com.arcadehub.client.MainApp"
     }
 }
 
@@ -36,17 +36,10 @@ dependencies {
 
     // Game Rendering
     implementation("com.badlogicgames.gdx:gdx:$gdxVersion")
-    implementation("com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion") {
-        exclude(group = "org.lwjgl") // Exclude all LWJGL dependencies from gdx-backend-lwjgl3
-    }
+    implementation("com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion")
 
-    // Explicit LWJGL native dependencies for macOS ARM64
-    runtimeOnly("org.lwjgl:lwjgl:3.3.3:natives-macos-arm64")
-    runtimeOnly("org.lwjgl:lwjgl-glfw:3.3.3:natives-macos-arm64")
-    runtimeOnly("org.lwjgl:lwjgl-opengl:3.3.3:natives-macos-arm64")
-    runtimeOnly("org.lwjgl:lwjgl-jemalloc:3.3.3:natives-macos-arm64")
-    runtimeOnly("org.lwjgl:lwjgl-stb:3.3.3:natives-macos-arm64")
-    runtimeOnly("org.lwjgl:lwjgl-tinyfd:3.3.3:natives-macos-arm64")
+    // Reverting to natives-desktop and will manually remove unwanted natives
+    runtimeOnly("com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop")
 
     // JSON Serialization
     implementation("com.fasterxml.jackson.core:jackson-databind:2.17.0")

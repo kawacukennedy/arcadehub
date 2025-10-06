@@ -1,47 +1,85 @@
 package com.arcadehub.server.lobby;
 
-import com.arcadehub.common.Lobby;
 import com.arcadehub.common.GameType;
+import com.arcadehub.common.Lobby;
+import com.arcadehub.common.Player;
+import io.netty.channel.ChannelHandlerContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledExecutorService;
 
-/**
- * Manages lobby lifecycle, broadcasts state, cleans up inactive lobbies.
- */
 public class LobbyManager {
-    private ConcurrentHashMap<UUID, Lobby> activeLobbies = new ConcurrentHashMap<>();
-    private ScheduledExecutorService cleanupScheduler;
+    private static final Logger logger = LoggerFactory.getLogger(LobbyManager.class);
+    private final Map<UUID, Lobby> activeLobbies;
+    private final Map<String, UUID> playerLobbyMap; // Player username to Lobby ID
 
-    public UUID createLobby(String name, String host, GameType gameType) {
-        // Implementation for creating a lobby
-        Lobby newLobby = new Lobby(name, host, gameType);
-        activeLobbies.put(newLobby.getId(), newLobby);
-        System.out.println("Lobby " + name + " created with ID " + newLobby.getId());
-        return newLobby.getId();
+    public LobbyManager() {
+        this.activeLobbies = new ConcurrentHashMap<>();
+        this.playerLobbyMap = new ConcurrentHashMap<>();
     }
 
-    public void joinLobby(UUID lobbyId, String username) {
+    public Lobby createLobby(String lobbyName, GameType gameType, int maxPlayers, String host) {
+        UUID lobbyId = UUID.randomUUID();
+        Lobby lobby = new Lobby(lobbyId, lobbyName, gameType, maxPlayers, host);
+        activeLobbies.put(lobbyId, lobby);
+        logger.info("Lobby created: {}", lobby);
+        return lobby;
+    }
+
+    public boolean joinLobby(UUID lobbyId, Player player, ChannelHandlerContext ctx) {
         Lobby lobby = activeLobbies.get(lobbyId);
-        if (lobby != null) {
-            // Placeholder: Add user to lobby, broadcast update
-            System.out.println(username + " joined lobby " + lobby.getName() + " (placeholder)");
-        } else {
-            System.out.println("Lobby " + lobbyId + " not found.");
+        if (lobby == null) {
+            logger.warn("Attempted to join non-existent lobby: {}", lobbyId);
+            return false;
+        }
+        if (lobby.isGameStarted()) {
+            logger.warn("Attempted to join started game in lobby: {}", lobbyId);
+            return false;
+        }
+        if (lobby.getPlayers().size() >= lobby.getMaxPlayers()) {
+            logger.warn("Attempted to join full lobby: {}", lobbyId);
+            return false;
+        }
+
+        if (lobby.addPlayer(player)) {
+            playerLobbyMap.put(player.getUsername(), lobbyId);
+            logger.info("Player {} joined lobby {}", player.getUsername(), lobbyId);
+            // TODO: Notify all players in the lobby about the new player
+            return true;
+        }
+        return false;
+    }
+
+    public void leaveLobby(String username) {
+        UUID lobbyId = playerLobbyMap.remove(username);
+        if (lobbyId != null) {
+            Lobby lobby = activeLobbies.get(lobbyId);
+            if (lobby != null) {
+                lobby.removePlayer(new Player(null, username, 0, 0, 0, null)); // Create a dummy player for removal
+                logger.info("Player {} left lobby {}", username, lobbyId);
+                if (lobby.getPlayers().isEmpty()) {
+                    activeLobbies.remove(lobbyId);
+                    logger.info("Lobby {} is empty and removed.", lobbyId);
+                }
+                // TODO: Notify all players in the lobby about the player leaving
+            }
         }
     }
 
-    public void removeLobby(UUID lobbyId) {
-        Lobby removedLobby = activeLobbies.remove(lobbyId);
-        if (removedLobby != null) {
-            System.out.println("Lobby " + removedLobby.getName() + " removed (placeholder)");
-        } else {
-            System.out.println("Lobby " + lobbyId + " not found for removal.");
-        }
-    }
-
-    public Lobby getLobby(UUID lobbyId) {
+    public Lobby getLobbyById(UUID lobbyId) {
         return activeLobbies.get(lobbyId);
+    }
+
+    public Lobby getLobbyByPlayerUsername(String username) {
+        UUID lobbyId = playerLobbyMap.get(username);
+        return lobbyId != null ? activeLobbies.get(lobbyId) : null;
+    }
+
+    public Map<UUID, Lobby> getActiveLobbies() {
+        return Collections.unmodifiableMap(activeLobbies);
     }
 }

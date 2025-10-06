@@ -1,13 +1,9 @@
 package com.arcadehub.common;
 
-public class HeartbeatPacket extends Packet {
-    private static final long serialVersionUID = 1L;
+import java.io.Serializable;
 
-    private long timestamp;
-
-    public HeartbeatPacket() {
-        // Default constructor for serialization
-    }
+public class HeartbeatPacket implements Packet {
+    private final long timestamp;
 
     public HeartbeatPacket(long timestamp) {
         this.timestamp = timestamp;
@@ -17,7 +13,10 @@ public class HeartbeatPacket extends Packet {
         return timestamp;
     }
 
-    public void setTimestamp(long timestamp) {
-        this.timestamp = timestamp;
+    @Override
+    public String toString() {
+        return "HeartbeatPacket{" +
+               "timestamp=" + timestamp +
+               '}';
     }
 }

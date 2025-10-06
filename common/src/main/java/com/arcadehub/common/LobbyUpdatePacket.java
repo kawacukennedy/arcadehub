@@ -1,25 +1,23 @@
 package com.arcadehub.common;
 
 import java.io.Serializable;
+import java.util.List;
 
-public class LobbyUpdatePacket extends Packet implements Serializable {
-    private static final long serialVersionUID = 1L;
+public class LobbyUpdatePacket implements Packet {
+    private final List<Lobby> lobbies;
 
-    private Lobby lobby;
-
-    public LobbyUpdatePacket() {
-        // Default constructor for serialization
+    public LobbyUpdatePacket(List<Lobby> lobbies) {
+        this.lobbies = lobbies;
     }
 
-    public LobbyUpdatePacket(Lobby lobby) {
-        this.lobby = lobby;
+    public List<Lobby> getLobbies() {
+        return lobbies;
     }
 
-    public Lobby getLobby() {
-        return lobby;
-    }
-
-    public void setLobby(Lobby lobby) {
-        this.lobby = lobby;
+    @Override
+    public String toString() {
+        return "LobbyUpdatePacket{" +
+               "lobbies=" + lobbies +
+               '}';
     }
 }

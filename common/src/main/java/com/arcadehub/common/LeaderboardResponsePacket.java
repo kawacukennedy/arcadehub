@@ -3,24 +3,21 @@ package com.arcadehub.common;
 import java.io.Serializable;
 import java.util.List;
 
-public class LeaderboardResponsePacket extends Packet implements Serializable {
-    private static final long serialVersionUID = 1L;
+public class LeaderboardResponsePacket implements Packet {
+    private final List<Player> leaderboard;
 
-    private List<Player> topPlayers;
-
-    public LeaderboardResponsePacket() {
-        // Default constructor for serialization
+    public LeaderboardResponsePacket(List<Player> leaderboard) {
+        this.leaderboard = leaderboard;
     }
 
-    public LeaderboardResponsePacket(List<Player> topPlayers) {
-        this.topPlayers = topPlayers;
+    public List<Player> getLeaderboard() {
+        return leaderboard;
     }
 
-    public List<Player> getTopPlayers() {
-        return topPlayers;
-    }
-
-    public void setTopPlayers(List<Player> topPlayers) {
-        this.topPlayers = topPlayers;
+    @Override
+    public String toString() {
+        return "LeaderboardResponsePacket{" +
+               "leaderboard=" + leaderboard +
+               '}';
     }
 }

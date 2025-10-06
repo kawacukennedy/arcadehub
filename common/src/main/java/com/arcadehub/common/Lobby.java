@@ -1,96 +1,113 @@
 package com.arcadehub.common;
 
-import com.arcadehub.common.GameType;
-import com.arcadehub.common.Player;
-
-import jakarta.persistence.*;
-import java.sql.Timestamp;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
-@Entity
-@Table(name = "lobbies")
-public class Lobby {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+public class Lobby implements Serializable {
     private UUID id;
-
-    @Column(length = 64)
     private String name;
+    private GameType gameType;
+    private List<Player> players;
+    private int maxPlayers;
+    private boolean gameStarted;
+    private String host; // New field for host username
 
-    @Column(length = 32)
-    private String host;
-
-    @Enumerated(EnumType.STRING)
-    private GameType type;
-
-    @Column(name = "created_at")
-    private Timestamp createdAt;
-
-    @Transient // Not persisted to DB
-    private List<Player> players = new ArrayList<>(); // Added players field
-
-    public List<Player> getPlayers() {
-        return players;
-    }
-
-    public void setPlayers(List<Player> players) {
-        this.players = players;
-    }
-
-    public Lobby() {
-        // Default constructor for Hibernate
-    }
-
-    public Lobby(String name, String host, GameType type) {
-        this.id = UUID.randomUUID();
+    public Lobby(UUID id, String name, GameType gameType, int maxPlayers, String host) {
+        this.id = id;
         this.name = name;
+        this.gameType = gameType;
+        this.players = new ArrayList<>();
+        this.maxPlayers = maxPlayers;
+        this.gameStarted = false;
         this.host = host;
-        this.type = type;
-        this.createdAt = new Timestamp(System.currentTimeMillis());
     }
 
-    // Getters and setters
-
+    // Getters
     public UUID getId() {
         return id;
-    }
-
-    public void setId(UUID id) {
-        this.id = id;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public GameType getGameType() {
+        return gameType;
+    }
+
+    public List<Player> getPlayers() {
+        return players;
+    }
+
+    public int getMaxPlayers() {
+        return maxPlayers;
+    }
+
+    public boolean isGameStarted() {
+        return gameStarted;
     }
 
     public String getHost() {
         return host;
     }
 
+    // Setters
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setGameType(GameType gameType) {
+        this.gameType = gameType;
+    }
+
+    public void setMaxPlayers(int maxPlayers) {
+        this.maxPlayers = maxPlayers;
+    }
+
+    public void setGameStarted(boolean gameStarted) {
+        this.gameStarted = gameStarted;
+    }
+
     public void setHost(String host) {
         this.host = host;
     }
 
-    public GameType getType() {
-        return type;
+    public boolean addPlayer(Player player) {
+        if (players.size() < maxPlayers && !gameStarted) {
+            return players.add(player);
+        }
+        return false;
     }
 
-    public void setType(GameType type) {
-        this.type = type;
+    public boolean removePlayer(Player player) {
+        return players.remove(player);
     }
 
-    public Timestamp getCreatedAt() {
-        return createdAt;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Lobby lobby = (Lobby) o;
+        return Objects.equals(id, lobby.id);
     }
 
-    public void setCreatedAt(Timestamp createdAt) {
-        this.createdAt = createdAt;
+    @Override
+    public int hashCode() {
+        return Objects.hash(id);
+    }
+
+    @Override
+    public String toString() {
+        return "Lobby{"
+               + "id=" + id + ", "
+               + "name='" + name + "'" + ", "
+               + "gameType=" + gameType + ", "
+               + "players=" + players + ", "
+               + "maxPlayers=" + maxPlayers + ", "
+               + "gameStarted=" + gameStarted + 
+               '}';
     }
 }

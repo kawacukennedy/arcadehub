@@ -1,33 +1,36 @@
 package com.arcadehub.common;
 
-public class ChatPacket extends Packet {
-    private static final long serialVersionUID = 1L;
+import java.io.Serializable;
 
-    private String username;
-    private String message;
+public class ChatPacket implements Packet {
+    private final String senderUsername;
+    private final String message;
+    private final long timestamp;
 
-    public ChatPacket() {
-        // Default constructor for serialization
-    }
-
-    public ChatPacket(String username, String message) {
-        this.username = username;
+    public ChatPacket(String senderUsername, String message, long timestamp) {
+        this.senderUsername = senderUsername;
         this.message = message;
+        this.timestamp = timestamp;
     }
 
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
+    public String getSenderUsername() {
+        return senderUsername;
     }
 
     public String getMessage() {
         return message;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    @Override
+    public String toString() {
+        return "ChatPacket{" +
+               "senderUsername='" + senderUsername + "'" +
+               ", message='" + message + "'" +
+               ", timestamp=" + timestamp +
+               '}';
     }
 }

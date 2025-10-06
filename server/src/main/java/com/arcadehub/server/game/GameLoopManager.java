@@ -1,50 +1,134 @@
 package com.arcadehub.server.game;
 
-import com.arcadehub.common.GameState;
 import com.arcadehub.common.GameType;
+import com.arcadehub.common.Lobby;
+import com.arcadehub.common.StateUpdatePacket;
+import io.netty.channel.ChannelHandlerContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-/**
- * Executes game logic 20 ticks/sec per lobby, updates positions, handles collisions, broadcasts STATE_UPDATE.
- */
 public class GameLoopManager {
-    private ScheduledExecutorService gameLoopExecutor;
-    private Map<UUID, GameState> lobbyStates;
+    private static final Logger logger = LoggerFactory.getLogger(GameLoopManager.class);
+    private final Map<UUID, GameLoop> activeGameLoops;
+    private final ScheduledExecutorService scheduler;
 
     public GameLoopManager() {
-        this.gameLoopExecutor = Executors.newSingleThreadScheduledExecutor();
-        this.lobbyStates = new java.util.concurrent.ConcurrentHashMap<>();
+        this.activeGameLoops = new ConcurrentHashMap<>();
+        this.scheduler = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
     }
 
-    public void startLoop(UUID lobbyId, GameType gameType) {
-        if (!lobbyStates.containsKey(lobbyId)) {
-            lobbyStates.put(lobbyId, new GameState(lobbyId, gameType)); // Initialize new GameState for the lobby
-            gameLoopExecutor.scheduleAtFixedRate(() -> tick(lobbyId), 0, 50, TimeUnit.MILLISECONDS); // 20 ticks/sec
-            System.out.println("Game loop started for lobby: " + lobbyId);
-        } else {
-            System.out.println("Game loop already running for lobby: " + lobbyId);
+    public void startGame(Lobby lobby, Map<String, ChannelHandlerContext> playerChannels) {
+        if (activeGameLoops.containsKey(lobby.getId())) {
+            logger.warn("Game for lobby {} already started.", lobby.getId());
+            return;
+        }
+
+        GameLoop gameLoop;
+        switch (lobby.getGameType()) {
+            case SNAKE:
+                gameLoop = new SnakeGameLoop(lobby, playerChannels);
+                break;
+            case PONG:
+                gameLoop = new PongGameLoop(lobby, playerChannels);
+                break;
+            default:
+                logger.error("Unsupported game type: {}", lobby.getGameType());
+                return;
+        }
+
+        activeGameLoops.put(lobby.getId(), gameLoop);
+        scheduler.scheduleAtFixedRate(gameLoop, 0, 1000 / gameLoop.getTickRateHz(), TimeUnit.MILLISECONDS);
+        logger.info("Started {} game for lobby {}", lobby.getGameType(), lobby.getId());
+    }
+
+    public void stopGame(UUID lobbyId) {
+        GameLoop gameLoop = activeGameLoops.remove(lobbyId);
+        if (gameLoop != null) {
+            gameLoop.stop();
+            logger.info("Stopped game for lobby {}", lobbyId);
         }
     }
 
-    private void tick(UUID lobbyId) {
-        GameState state = lobbyStates.get(lobbyId);
-        if (state != null) {
-            // Placeholder: Update positions, handle collisions, etc.
-            System.out.println("Lobby " + lobbyId + " ticking...");
-            // Placeholder: Broadcast STATE_UPDATE to clients
-            // networkServer.broadcast(lobbyId, new StateUpdatePacket(state));
-        } else {
-            System.out.println("No game state found for lobby: " + lobbyId);
-            // Optionally stop the loop if state is null
+    public void shutdown() {
+        scheduler.shutdown();
+        activeGameLoops.values().forEach(GameLoop::stop);
+        logger.info("GameLoopManager shut down.");
+    }
+
+    // Interface for game-specific loops
+    private interface GameLoop extends Runnable {
+        int getTickRateHz();
+        void stop();
+    }
+
+    // Placeholder for Snake Game Loop
+    private static class SnakeGameLoop implements GameLoop {
+        private final Lobby lobby;
+        private final Map<String, ChannelHandlerContext> playerChannels;
+        private volatile boolean running = true;
+
+        public SnakeGameLoop(Lobby lobby, Map<String, ChannelHandlerContext> playerChannels) {
+            this.lobby = lobby;
+            this.playerChannels = playerChannels;
+        }
+
+        @Override
+        public int getTickRateHz() {
+            return 20; // From game_specs.snake.tick_rate_hz
+        }
+
+        @Override
+        public void run() {
+            if (!running) return;
+            // TODO: Implement Snake game logic
+            logger.debug("Snake game loop for lobby {}", lobby.getId());
+            // Example: Send a state update packet
+            StateUpdatePacket stateUpdate = new StateUpdatePacket(System.currentTimeMillis());
+            playerChannels.values().forEach(ctx -> ctx.writeAndFlush(stateUpdate));
+        }
+
+        @Override
+        public void stop() {
+            running = false;
         }
     }
 
-    public GameState getGameState(UUID lobbyId) {
-        return lobbyStates.get(lobbyId);
+    // Placeholder for Pong Game Loop
+    private static class PongGameLoop implements GameLoop {
+        private final Lobby lobby;
+        private final Map<String, ChannelHandlerContext> playerChannels;
+        private volatile boolean running = true;
+
+        public PongGameLoop(Lobby lobby, Map<String, ChannelHandlerContext> playerChannels) {
+            this.lobby = lobby;
+            this.playerChannels = playerChannels;
+        }
+
+        @Override
+        public int getTickRateHz() {
+            return 60; // From game_specs.pong.tick_rate_hz
+        }
+
+        @Override
+        public void run() {
+            if (!running) return;
+            // TODO: Implement Pong game logic
+            logger.debug("Pong game loop for lobby {}", lobby.getId());
+            // Example: Send a state update packet
+            StateUpdatePacket stateUpdate = new StateUpdatePacket(System.currentTimeMillis());
+            playerChannels.values().forEach(ctx -> ctx.writeAndFlush(stateUpdate));
+        }
+
+        @Override
+        public void stop() {
+            running = false;
+        }
     }
 }

@@ -1,70 +1,58 @@
 package com.arcadehub.client.network;
 
+import com.arcadehub.common.HeartbeatPacket;
 import com.arcadehub.common.Packet;
 import com.arcadehub.common.StateUpdatePacket;
-import com.arcadehub.common.ChatPacket;
-import com.arcadehub.common.LobbyUpdatePacket;
-import com.arcadehub.common.LeaderboardResponsePacket;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.timeout.IdleState;
+import io.netty.handler.timeout.IdleStateEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class ClientHandler extends SimpleChannelInboundHandler<String> {
+public class ClientHandler extends SimpleChannelInboundHandler<Packet> {
+    private static final Logger logger = LoggerFactory.getLogger(ClientHandler.class);
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
-    private final com.arcadehub.client.game.GameRenderer gameRenderer;
-    private com.arcadehub.client.ui.UIManager uiManager; // Removed 'final'
-
-    public ClientHandler(com.arcadehub.client.game.GameRenderer gameRenderer, com.arcadehub.client.ui.UIManager uiManager) {
-        this.gameRenderer = gameRenderer;
-        this.uiManager = uiManager;
-    }
-
-    public void setUIManager(com.arcadehub.client.ui.UIManager uiManager) {
-        // This method is used to set the UIManager after it has been fully initialized in Main.
-        // This helps resolve circular dependency issues during initialization.
-        // Note: In a more robust application, consider using dependency injection frameworks.
-        this.uiManager = uiManager;
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        logger.info("Connected to server: {}", ctx.channel().remoteAddress());
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
-        Packet basePacket = objectMapper.readValue(msg, Packet.class);
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        logger.info("Disconnected from server: {}", ctx.channel().remoteAddress());
+    }
 
-        switch (basePacket.getClass().getSimpleName()) {
-            case "StateUpdatePacket":
-                gameRenderer.updatePositions(((StateUpdatePacket) basePacket).getGameState());
-                break;
-            case "LeaderboardResponsePacket":
-                handleLeaderboardResponse(ctx, (LeaderboardResponsePacket) basePacket);
-                break;
-            case "ChatPacket":
-                handleChat(ctx, (ChatPacket) basePacket);
-                break;
-            case "LobbyUpdatePacket":
-                handleLobbyUpdate(ctx, (LobbyUpdatePacket) basePacket);
-                break;
-            // TODO: Handle other packet types
-            default:
-                System.out.println("Unknown packet type: " + basePacket.getClass().getSimpleName());
+    @Override
+    protected void channelRead0(ChannelHandlerContext ctx, Packet msg) throws Exception {
+        if (msg instanceof HeartbeatPacket) {
+            logger.debug("Received Heartbeat from server.");
+        } else if (msg instanceof StateUpdatePacket) {
+            StateUpdatePacket stateUpdate = (StateUpdatePacket) msg;
+            logger.info("Received StateUpdatePacket from server at timestamp: {}", stateUpdate.getTimestamp());
+            // TODO: Update game UI based on stateUpdate
+        } else {
+            logger.info("Received packet from server: {}", msg.getClass().getSimpleName());
+            // TODO: Handle other packet types (ChatPacket, LobbyUpdatePacket, LeaderboardResponsePacket)
         }
     }
 
-    private void handleLobbyUpdate(ChannelHandlerContext ctx, LobbyUpdatePacket packet) {
-        uiManager.showLobby(packet.getLobby());
-    }
-
-    private void handleChat(ChannelHandlerContext ctx, ChatPacket packet) {
-        uiManager.appendChatMessage(packet.getUsername(), packet.getMessage());
-    }
-
-    private void handleLeaderboardResponse(ChannelHandlerContext ctx, LeaderboardResponsePacket packet) {
-        uiManager.showLeaderboard(packet.getTopPlayers());
+    @Override
+    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+        if (evt instanceof IdleStateEvent) {
+            IdleStateEvent e = (IdleStateEvent) evt;
+            if (e.state() == IdleState.WRITER_IDLE) {
+                // Send heartbeat to server to keep connection alive
+                ctx.writeAndFlush(new HeartbeatPacket(System.currentTimeMillis()));
+                logger.debug("Sending Heartbeat to server.");
+            }
+        }
+        super.userEventTriggered(ctx, evt);
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        cause.printStackTrace();
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        logger.error("Error in client handler: {}", cause.getMessage(), cause);
         ctx.close();
     }
 }

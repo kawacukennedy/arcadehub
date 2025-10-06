@@ -1,27 +1,14 @@
 package com.arcadehub.common;
 
+import java.io.Serializable;
 import java.util.UUID;
 
-public class JoinLobbyPacket extends Packet {
-    private static final long serialVersionUID = 1L;
+public class JoinLobbyPacket implements Packet {
+    private final UUID lobbyId;
+    private final String username;
 
-    private String username;
-    private UUID lobbyId;
-
-    public JoinLobbyPacket() {
-        // Default constructor for serialization
-    }
-
-    public JoinLobbyPacket(String username, UUID lobbyId) {
-        this.username = username;
+    public JoinLobbyPacket(UUID lobbyId, String username) {
         this.lobbyId = lobbyId;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
         this.username = username;
     }
 
@@ -29,7 +16,15 @@ public class JoinLobbyPacket extends Packet {
         return lobbyId;
     }
 
-    public void setLobbyId(UUID lobbyId) {
-        this.lobbyId = lobbyId;
+    public String getUsername() {
+        return username;
+    }
+
+    @Override
+    public String toString() {
+        return "JoinLobbyPacket{" +
+               "lobbyId=" + lobbyId +
+               ", username='" + username + "'" +
+               '}';
     }
 }

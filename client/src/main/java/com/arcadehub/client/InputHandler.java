@@ -1,48 +1,57 @@
 package com.arcadehub.client;
 
-import com.arcadehub.client.network.NetworkClient;
+import com.arcadehub.client.network.ClientNetworkManager;
+import com.arcadehub.common.InputPacket;
 import javafx.scene.Scene;
-import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
-
-// Placeholder for KeyCode and Action enums/classes (will be moved to common if shared)
-enum Action { MOVE_UP, MOVE_DOWN, MOVE_LEFT, MOVE_RIGHT, SHOOT }
-
-/**
- * Captures and sends input, ensures anti-cheat compliance.
- */
 public class InputHandler {
-    private Map<KeyCode, Action> keyBindings = new HashMap<>();
-    private long lastSentTick;
-    private NetworkClient networkClient;
+    private static final Logger logger = LoggerFactory.getLogger(InputHandler.class);
+    private final ClientNetworkManager networkManager;
 
-    public InputHandler(NetworkClient networkClient) {
-        this.networkClient = networkClient;
+    public InputHandler(Scene scene, ClientNetworkManager networkManager) {
+        this.networkManager = networkManager;
+        scene.setOnKeyPressed(this::handleKeyPressed);
+        scene.setOnKeyReleased(this::handleKeyReleased);
+        // TODO: Add mouse input handling if necessary for specific games
     }
 
-    /**
-     * Captures keyboard input and maps to game actions.
-     */
-    public void captureInput(Scene scene) {
-        // Placeholder: Add event listeners for keyboard input
-        scene.setOnKeyPressed(event -> {
-            Action action = keyBindings.get(event.getCode());
-            if (action != null) {
-                sendInputToServer(action, System.currentTimeMillis());
-            }
-        });
-        System.out.println("Input capture initialized (placeholder)");
+    private void handleKeyPressed(KeyEvent event) {
+        InputPacket.Action action = null;
+        switch (event.getCode()) {
+            case W:
+            case UP:
+                action = InputPacket.Action.MOVE_UP;
+                break;
+            case S:
+            case DOWN:
+                action = InputPacket.Action.MOVE_DOWN;
+                break;
+            case A:
+            case LEFT:
+                action = InputPacket.Action.MOVE_LEFT;
+                break;
+            case D:
+            case RIGHT:
+                action = InputPacket.Action.MOVE_RIGHT;
+                break;
+            case SPACE:
+                action = InputPacket.Action.SHOOT;
+                break;
+            // Add more key mappings as needed
+        }
+
+        if (action != null) {
+            networkManager.sendPacket(new InputPacket(action, System.currentTimeMillis()));
+            logger.debug("Key pressed: {} -> Sent InputPacket: {}", event.getCode(), action);
+        }
     }
 
-    /**
-     * Sends action to server with tick for anti-cheat verification.
-     */
-    private void sendInputToServer(Action action, long tick) {
-        // Placeholder: Create an INPUT packet and send it via NetworkClient
-        // networkClient.sendPacket(new InputPacket(action, tick));
-        this.lastSentTick = tick;
-        System.out.println("Sending input to server (placeholder): " + action + " at tick " + tick);
+    private void handleKeyReleased(KeyEvent event) {
+        // For continuous actions, key released might also trigger an InputPacket (e.g., STOP_MOVE_UP)
+        // For now, we only send on key pressed for simplicity.
+        logger.debug("Key released: {}", event.getCode());
     }
 }
