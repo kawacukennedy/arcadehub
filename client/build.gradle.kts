@@ -27,6 +27,22 @@ tasks.jar {
     }
 }
 
+tasks.register<JavaExec>("jpackageLinux") {
+    group = "distribution"
+    description = "Package client for Linux using jpackage"
+    classpath = files(sourceSets["main"].runtimeClasspath, configurations.runtimeClasspath)
+    mainClass.set("jdk.jpackage.main.Main")
+    args = listOf(
+        "--type", "deb",
+        "--name", "ArcadeHub",
+        "--input", "build/libs",
+        "--main-jar", "client.jar",
+        "--main-class", "com.arcadehub.client.MainApp",
+        "--app-version", "1.5.0",
+        "--linux-shortcut"
+    )
+}
+
 dependencies {
     // Shared module
     implementation(project(":shared"))
