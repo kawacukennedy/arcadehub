@@ -1,6 +1,7 @@
 package com.arcadehub.client;
 
 import com.arcadehub.client.network.ClientNetworkManager;
+import com.arcadehub.client.game.GameRenderer;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -37,8 +38,12 @@ public class MainApp extends Application {
         primaryStage.setScene(scene);
         primaryStage.show();
 
+        // Initialize GameRenderer (placeholder)
+        GameRenderer gameRenderer = new GameRenderer(null, null); // TODO: Proper init
+        ClientHandler.setGameRenderer(gameRenderer);
+
         // Initialize InputHandler
-        InputHandler inputHandler = new InputHandler(scene, networkManager);
+        InputHandler inputHandler = new InputHandler(scene, networkManager, gameRenderer);
 
         primaryStage.setOnCloseRequest(event -> {
             logger.info("Shutting down network manager.");

@@ -19,10 +19,7 @@ import java.util.Map;
 public class GameRenderer {
     private OrthographicCamera camera;
     private SpriteBatch batch;
-    private Map<String, Snake> snakes = new HashMap<>();
-    private List<Food> foodItems = new java.util.ArrayList<>();
-    private Ball pongBall;
-    private Map<String, Paddle> paddles = new HashMap<>();
+    private ClientGameState clientState = new ClientGameState();
 
     public GameRenderer(OrthographicCamera camera, SpriteBatch batch) {
         this.camera = camera;
@@ -30,8 +27,11 @@ public class GameRenderer {
     }
 
     public void render(SpriteBatch batch) {
-        // Placeholder for generic rendering logic
-        System.out.println("Generic render method called.");
+        GameState state = clientState.getPredictedState();
+        if (state != null) {
+            // Render based on predicted state
+            System.out.println("Rendering predicted state at tick: " + state.getTick());
+        }
     }
 
     /**
@@ -83,9 +83,12 @@ public class GameRenderer {
      * Updates all game objects from server tick, applies interpolation and client-side prediction.
      */
     public void updatePositions(GameState state) {
-        // Placeholder: Update snake positions
-        // For example: snakes.get(player.getId()).update(state.getSnakePositions(player.getId()));
-        System.out.println("Updating game object positions based on server tick: " + state.getTick());
+        clientState.reconcile(state);
+        System.out.println("Reconciled with server tick: " + state.getTick());
+    }
+
+    public void applyLocalInput(String username, String action, int tick) {
+        clientState.applyInput(username, action, tick);
     }
 
     /**

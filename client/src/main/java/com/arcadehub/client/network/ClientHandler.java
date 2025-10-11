@@ -6,6 +6,7 @@ import com.arcadehub.shared.JoinAcceptPacket;
 import com.arcadehub.shared.Packet;
 import com.arcadehub.shared.StateUpdatePacket;
 import com.arcadehub.shared.NetworkPacket;
+import com.arcadehub.client.game.GameRenderer;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
@@ -15,6 +16,11 @@ import org.slf4j.LoggerFactory;
 
 public class ClientHandler extends SimpleChannelInboundHandler<NetworkPacket> {
     private static final Logger logger = LoggerFactory.getLogger(ClientHandler.class);
+    private static GameRenderer gameRenderer;
+
+    public static void setGameRenderer(GameRenderer gr) {
+        gameRenderer = gr;
+    }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -38,6 +44,10 @@ public class ClientHandler extends SimpleChannelInboundHandler<NetworkPacket> {
                 ClientNetworkManager.setSessionToken(netPacket.getSessionId());
                 logger.info("Joined lobby, session: {}", netPacket.getSessionId());
             } else if (msg instanceof StateUpdatePacket) {
+                StateUpdatePacket statePacket = (StateUpdatePacket) msg;
+                if (gameRenderer != null) {
+                    gameRenderer.updatePositions(statePacket.getPayload().getState());
+                }
             StateUpdatePacket stateUpdate = (StateUpdatePacket) msg;
             logger.info("Received StateUpdatePacket from server at timestamp: {}", stateUpdate.getTimestamp());
             // TODO: Update game UI based on stateUpdate

@@ -1,6 +1,7 @@
 package com.arcadehub.client;
 
 import com.arcadehub.client.network.ClientNetworkManager;
+import com.arcadehub.client.game.GameRenderer;
 import com.arcadehub.shared.InputPacket;
 import com.arcadehub.shared.InputPayload;
 import org.apache.commons.codec.binary.Base64;
@@ -16,12 +17,13 @@ import org.slf4j.LoggerFactory;
 public class InputHandler {
     private static final Logger logger = LoggerFactory.getLogger(InputHandler.class);
     private final ClientNetworkManager networkManager;
+    private final GameRenderer gameRenderer;
 
-    public InputHandler(Scene scene, ClientNetworkManager networkManager) {
+    public InputHandler(Scene scene, ClientNetworkManager networkManager, GameRenderer gameRenderer) {
         this.networkManager = networkManager;
+        this.gameRenderer = gameRenderer;
         scene.setOnKeyPressed(this::handleKeyPressed);
         scene.setOnKeyReleased(this::handleKeyReleased);
-        // TODO: Add mouse input handling if necessary for specific games
     }
 
     private void handleKeyPressed(KeyEvent event) {
@@ -52,6 +54,7 @@ public class InputHandler {
         if (action != null) {
             String username = "alice"; // placeholder
             int tick = 0; // placeholder
+            gameRenderer.applyLocalInput(username, action, tick);
             String sessionToken = ClientNetworkManager.getSessionToken();
             if (sessionToken == null) {
                 logger.warn("No session token, cannot send input");
