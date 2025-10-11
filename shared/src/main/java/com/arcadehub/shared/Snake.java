@@ -7,15 +7,16 @@ import java.util.List;
 public class Snake implements Serializable {
     private String username;
     private List<Position> body;
+    private Direction direction;
 
     public Snake() {
         // Default constructor for serialization
     }
 
-    public Snake(String username, Position headPosition) {
+    public Snake(String username, List<Position> body, Direction direction) {
         this.username = username;
-        this.body = new ArrayList<>();
-        this.body.add(headPosition);
+        this.body = body;
+        this.direction = direction;
     }
 
     public String getUsername() {
@@ -36,5 +37,13 @@ public class Snake implements Serializable {
 
     public Position getHeadPosition() {
         return body.get(0);
+    }
+
+    public Direction getDirection() {
+        return direction;
+    }
+
+    public void setDirection(Direction direction) {
+        this.direction = direction;
     }
 }

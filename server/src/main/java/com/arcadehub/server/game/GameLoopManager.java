@@ -9,6 +9,9 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.io.*;
+import java.nio.file.*;
+import java.time.Instant;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class GameLoopManager {
@@ -63,11 +66,31 @@ public class GameLoopManager {
         private volatile boolean running = true;
         private int currentTick = 0;
         private final ConcurrentLinkedQueue<InputEnvelope> inputQueue;
+        // Game state
+        private List<Snake> snakes = new ArrayList<>();
+        private List<Ball> balls = new ArrayList<>();
+        private List<Paddle> paddles = new ArrayList<>();
+        private Map<String, Integer> scores = new HashMap<>();
+        private long seed = 12345;
+        private PrintWriter replayWriter;
 
         public LobbyGameLoop(UUID lobbyId, ConcurrentLinkedQueue<InputEnvelope> inputQueue) {
             this.lobbyId = lobbyId;
             this.executor = new ScheduledThreadPoolExecutor(1);
             this.inputQueue = inputQueue;
+            // Init game state, e.g., add snake
+            snakes.add(new Snake("alice", List.of(new Position(10, 10)), Direction.RIGHT));
+            // Init replay
+            try {
+                Path replayPath = Paths.get("replays", lobbyId + ".ndjson");
+                Files.createDirectories(replayPath.getParent());
+                replayWriter = new PrintWriter(Files.newBufferedWriter(replayPath, StandardOpenOption.CREATE, StandardOpenOption.APPEND));
+                // Write header
+                String header = String.format("{\"version\":1,\"lobbyId\":\"%s\",\"seed\":%d,\"playerList\":[\"alice\"],\"createdAt\":\"%s\"}", lobbyId, seed, Instant.now());
+                replayWriter.println(header);
+            } catch (IOException e) {
+                logger.error("Failed to init replay", e);
+            }
         }
 
         public void start() {
@@ -83,24 +106,59 @@ public class GameLoopManager {
             while ((input = inputQueue.poll()) != null) {
                 inputs.add(input);
             }
-            // TODO: Apply inputs to game state
-            // For now, dummy state
-            List<Snake> snakes = List.of();
-            List<Paddle> paddles = List.of();
-            List<Ball> balls = List.of();
-            Map<String, Integer> scores = Map.of();
-            long seed = 12345;
-            GameState state = new GameState(lobbyId.toString(), currentTick, snakes, paddles, balls, scores, seed);
-            // TODO: Append to replay
+            // Apply inputs
+            for (InputEnvelope env : inputs) {
+                String action = env.getAction();
+                // For Snake, change direction
+                for (Snake snake : snakes) {
+                    if (snake.getUsername().equals(env.getUsername())) {
+                        switch (action) {
+                            case "MOVE_UP": snake.setDirection(Direction.UP); break;
+                            case "MOVE_DOWN": snake.setDirection(Direction.DOWN); break;
+                            case "MOVE_LEFT": snake.setDirection(Direction.LEFT); break;
+                            case "MOVE_RIGHT": snake.setDirection(Direction.RIGHT); break;
+                        }
+                    }
+                }
+            }
+            // Update game state
+            updateSnakes();
+            // Create state
+            GameState state = new GameState(lobbyId.toString(), currentTick, new ArrayList<>(snakes), new ArrayList<>(paddles), new ArrayList<>(balls), new HashMap<>(scores), seed);
+            // Append to replay
+            if (replayWriter != null) {
+                String snapshot = String.format("{\"tag\":\"TICK_SNAPSHOT\",\"tick\":%d,\"state\":%s,\"serverTimestampNs\":%d}", currentTick, state.toString(), System.nanoTime());
+                replayWriter.println(snapshot);
+                replayWriter.flush();
+            }
             // Broadcast
             StateUpdatePayload payload = new StateUpdatePayload(state, System.currentTimeMillis());
             // TODO: Send to clients
-            logger.debug("Tick {} for lobby {}, processed {} inputs", currentTick, lobbyId, inputs.size());
+            logger.debug("Tick {} for lobby {}, snakes: {}", currentTick, lobbyId, snakes.size());
+        }
+
+        private void updateSnakes() {
+            for (Snake snake : snakes) {
+                // Move head
+                Position head = snake.getHeadPosition();
+                Position newHead = switch (snake.getDirection()) {
+                    case UP -> new Position(head.getX(), head.getY() - 1);
+                    case DOWN -> new Position(head.getX(), head.getY() + 1);
+                    case LEFT -> new Position(head.getX() - 1, head.getY());
+                    case RIGHT -> new Position(head.getX() + 1, head.getY());
+                };
+                snake.getBody().add(0, newHead);
+                // TODO: Remove tail unless ate food
+                // TODO: Check collision
+            }
         }
 
         public void stop() {
             running = false;
             executor.shutdown();
+            if (replayWriter != null) {
+                replayWriter.close();
+            }
         }
     }
 }
