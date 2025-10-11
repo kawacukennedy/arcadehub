@@ -32,11 +32,12 @@ ArcadeHub is a cross-platform Java desktop arcade platform featuring real-time m
 
 ## Project Structure
 
-The project is organized into three main modules:
+The project is organized into four main modules:
 
 *   `client/`: Contains the client-side application logic, UI, game rendering, and network communication.
 *   `server/`: Houses the server-side logic, game loops, lobby management, database interactions, and anti-cheat validation.
-*   `common/`: Shared classes and utilities used by both the client and server (e.g., `Packet` definitions, `Position`, `Snake`, `Ball`, `Paddle`).
+*   `shared/`: Shared classes and utilities used by both the client and server (e.g., `Packet` definitions, `Position`, `Snake`, `Ball`, `Paddle`).
+*   `tools/`: Utilities for replay inspection and testing.
 
 ## Getting Started
 
@@ -60,7 +61,7 @@ This will compile all modules and generate JAR files in their respective `build/
 To run the server, navigate to the `server/` directory and execute the generated JAR:
 
 ```bash
-java -jar build/libs/server-1.0.0.jar
+java -jar build/libs/server-1.5.0.jar
 ```
 
 The server will start on `localhost:5050` for game traffic and `localhost:5051` for chat (though chat port is currently not explicitly used in the provided code).
@@ -70,7 +71,7 @@ The server will start on `localhost:5050` for game traffic and `localhost:5051` 
 To run the client, navigate to the `client/` directory and execute the generated JAR:
 
 ```bash
-java -jar build/libs/client-1.0.0.jar
+java -jar build/libs/client-1.5.0.jar
 ```
 
 The client application will launch, and it will attempt to connect to the server running on `localhost:5050`.
