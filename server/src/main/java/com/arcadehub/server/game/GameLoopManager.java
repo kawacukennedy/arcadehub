@@ -18,10 +18,16 @@ public class GameLoopManager {
     private static final Logger logger = LoggerFactory.getLogger(GameLoopManager.class);
     private final Map<UUID, LobbyGameLoop> activeGameLoops;
     private final Map<UUID, ConcurrentLinkedQueue<InputEnvelope>> inputQueues;
+    private final LeaderboardManager leaderboardManager;
 
-    public GameLoopManager() {
+    public GameLoopManager(LeaderboardManager leaderboardManager) {
         this.activeGameLoops = new ConcurrentHashMap<>();
         this.inputQueues = new ConcurrentHashMap<>();
+        this.leaderboardManager = leaderboardManager;
+    }
+
+    public void setLeaderboardManager(LeaderboardManager lm) {
+        // Already set in constructor
     }
 
     public void startLoop(UUID lobbyId) {

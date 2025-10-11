@@ -46,6 +46,8 @@ public class ServerMain {
                          .handler(new LoggingHandler(LogLevel.INFO))
                          .childHandler(new ServerInitializer(sslContext, lobbyManager, gameLoopManager, leaderboardManager)); // Pass managers to initializer
 
+            gameLoopManager.setLeaderboardManager(leaderboardManager);
+
             // Bind and start to accept incoming connections.
             ChannelFuture gameFuture = gameBootstrap.bind(GAME_PORT).sync();
             logger.info("ArcadeHub Game Server started on port {}", GAME_PORT);
