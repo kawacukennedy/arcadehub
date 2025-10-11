@@ -10,125 +10,72 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class GameLoopManager {
     private static final Logger logger = LoggerFactory.getLogger(GameLoopManager.class);
-    private final Map<UUID, GameLoop> activeGameLoops;
-    private final ScheduledExecutorService scheduler;
+    private final Map<UUID, LobbyGameLoop> activeGameLoops;
 
     public GameLoopManager() {
         this.activeGameLoops = new ConcurrentHashMap<>();
-        this.scheduler = Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
     }
 
-    public void startGame(Lobby lobby, Map<String, ChannelHandlerContext> playerChannels) {
-        if (activeGameLoops.containsKey(lobby.getId())) {
-            logger.warn("Game for lobby {} already started.", lobby.getId());
+    public void startLoop(UUID lobbyId) {
+        if (activeGameLoops.containsKey(lobbyId)) {
+            logger.warn("Game loop for lobby {} already started.", lobbyId);
             return;
         }
 
-        GameLoop gameLoop;
-        switch (lobby.getGameType()) {
-            case SNAKE:
-                gameLoop = new SnakeGameLoop(lobby, playerChannels);
-                break;
-            case PONG:
-                gameLoop = new PongGameLoop(lobby, playerChannels);
-                break;
-            default:
-                logger.error("Unsupported game type: {}", lobby.getGameType());
-                return;
-        }
-
-        activeGameLoops.put(lobby.getId(), gameLoop);
-        scheduler.scheduleAtFixedRate(gameLoop, 0, 1000 / gameLoop.getTickRateHz(), TimeUnit.MILLISECONDS);
-        logger.info("Started {} game for lobby {}", lobby.getGameType(), lobby.getId());
+        LobbyGameLoop gameLoop = new LobbyGameLoop(lobbyId);
+        activeGameLoops.put(lobbyId, gameLoop);
+        gameLoop.start();
+        logger.info("Started game loop for lobby {}", lobbyId);
     }
 
-    public void stopGame(UUID lobbyId) {
-        GameLoop gameLoop = activeGameLoops.remove(lobbyId);
+    public void stopLoop(UUID lobbyId) {
+        LobbyGameLoop gameLoop = activeGameLoops.remove(lobbyId);
         if (gameLoop != null) {
             gameLoop.stop();
-            logger.info("Stopped game for lobby {}", lobbyId);
+            logger.info("Stopped game loop for lobby {}", lobbyId);
         }
     }
 
     public void shutdown() {
-        scheduler.shutdown();
-        activeGameLoops.values().forEach(GameLoop::stop);
+        activeGameLoops.values().forEach(LobbyGameLoop::stop);
         logger.info("GameLoopManager shut down.");
     }
 
-    // Interface for game-specific loops
-    private interface GameLoop extends Runnable {
-        int getTickRateHz();
-        void stop();
-    }
-
-    // Placeholder for Snake Game Loop
-    private static class SnakeGameLoop implements GameLoop {
-        private final Lobby lobby;
-        private final Map<String, ChannelHandlerContext> playerChannels;
+    // Per-lobby game loop
+    private static class LobbyGameLoop {
+        private final UUID lobbyId;
+        private final ScheduledThreadPoolExecutor executor;
         private volatile boolean running = true;
 
-        public SnakeGameLoop(Lobby lobby, Map<String, ChannelHandlerContext> playerChannels) {
-            this.lobby = lobby;
-            this.playerChannels = playerChannels;
+        public LobbyGameLoop(UUID lobbyId) {
+            this.lobbyId = lobbyId;
+            this.executor = new ScheduledThreadPoolExecutor(1);
         }
 
-        @Override
-        public int getTickRateHz() {
-            return 20; // From game_specs.snake.tick_rate_hz
+        public void start() {
+            executor.scheduleAtFixedRate(this::tick, 0, 50, TimeUnit.MILLISECONDS); // 20 Hz = 50ms
         }
 
-        @Override
-        public void run() {
+        private void tick() {
             if (!running) return;
-            // TODO: Implement Snake game logic
-            logger.debug("Snake game loop for lobby {}", lobby.getId());
-            // Example: Send a state update packet
-            StateUpdatePacket stateUpdate = new StateUpdatePacket(System.currentTimeMillis());
-            playerChannels.values().forEach(ctx -> ctx.writeAndFlush(stateUpdate));
+            // TODO: Implement tick logic as per spec
+            // (1) read inputs queued up to tick N
+            // (2) apply deterministic update
+            // (3) resolve collisions
+            // (4) update ELO on match end
+            // (5) append immutable snapshot to replay stream
+            // (6) broadcast STATE_UPDATE(N)
+            logger.debug("Tick for lobby {}", lobbyId);
         }
 
-        @Override
         public void stop() {
             running = false;
-        }
-    }
-
-    // Placeholder for Pong Game Loop
-    private static class PongGameLoop implements GameLoop {
-        private final Lobby lobby;
-        private final Map<String, ChannelHandlerContext> playerChannels;
-        private volatile boolean running = true;
-
-        public PongGameLoop(Lobby lobby, Map<String, ChannelHandlerContext> playerChannels) {
-            this.lobby = lobby;
-            this.playerChannels = playerChannels;
-        }
-
-        @Override
-        public int getTickRateHz() {
-            return 60; // From game_specs.pong.tick_rate_hz
-        }
-
-        @Override
-        public void run() {
-            if (!running) return;
-            // TODO: Implement Pong game logic
-            logger.debug("Pong game loop for lobby {}", lobby.getId());
-            // Example: Send a state update packet
-            StateUpdatePacket stateUpdate = new StateUpdatePacket(System.currentTimeMillis());
-            playerChannels.values().forEach(ctx -> ctx.writeAndFlush(stateUpdate));
-        }
-
-        @Override
-        public void stop() {
-            running = false;
+            executor.shutdown();
         }
     }
 }

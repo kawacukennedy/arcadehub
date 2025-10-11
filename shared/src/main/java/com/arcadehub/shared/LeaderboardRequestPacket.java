@@ -16,6 +16,11 @@ public class LeaderboardRequestPacket implements Packet {
     }
 
     @Override
+    public Object getPayload() {
+        return null;
+    }
+
+    @Override
     public String toString() {
         return "LeaderboardRequestPacket{}";
     }

@@ -7,4 +7,5 @@ package com.arcadehub.shared;
 public interface Packet {
     String getType();
     int getVersion();
+    Object getPayload();
 }

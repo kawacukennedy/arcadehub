@@ -1,6 +1,7 @@
 package com.arcadehub.client.network;
 
 import com.arcadehub.shared.Packet;
+import com.arcadehub.shared.NetworkPacket;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -55,7 +56,8 @@ public class ClientNetworkManager {
 
     public void sendPacket(Packet packet) {
         if (channel != null && channel.isActive()) {
-            channel.writeAndFlush(packet);
+            NetworkPacket netPacket = new NetworkPacket(packet.getType(), packet.getVersion(), null, packet.getPayload());
+            channel.writeAndFlush(netPacket);
         } else {
             logger.warn("Attempted to send packet while not connected or channel inactive.");
         }

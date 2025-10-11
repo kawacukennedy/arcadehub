@@ -22,6 +22,11 @@ public class JoinAcceptPacket implements Packet {
     }
 
     @Override
+    public Object getPayload() {
+        return payload;
+    }
+
+    @Override
     public String toString() {
         return "JoinAcceptPacket{" +
                "payload=" + payload +

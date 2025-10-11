@@ -15,27 +15,20 @@ public class PlayerEntity {
     private String username;
 
     @Column(nullable = false)
-    private int elo;
+    private int elo = 1000;
 
-    @Column(nullable = false)
-    private int wins;
+    @Column(name = "created_at")
+    private Instant createdAt;
 
-    @Column(nullable = false)
-    private int losses;
-
-    @Column(name = "last_active")
-    private Instant lastActive;
+    @Column(name = "last_login")
+    private Instant lastLogin;
 
     // Constructors
     public PlayerEntity() {
     }
 
-    public PlayerEntity(String username, int elo, int wins, int losses, Instant lastActive) {
+    public PlayerEntity(String username) {
         this.username = username;
-        this.elo = elo;
-        this.wins = wins;
-        this.losses = losses;
-        this.lastActive = lastActive;
     }
 
     // Getters and Setters
@@ -63,40 +56,16 @@ public class PlayerEntity {
         this.elo = elo;
     }
 
-    public int getWins() {
-        return wins;
-    }
+    public Instant getCreatedAt() { return createdAt; }
+    public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
 
-    public void setWins(int wins) {
-        this.wins = wins;
-    }
-
-    public int getLosses() {
-        return losses;
-    }
-
-    public void setLosses(int losses) {
-        this.losses = losses;
-    }
-
-    public Instant getLastActive() {
-        return lastActive;
-    }
-
-    public void setLastActive(Instant lastActive) {
-        this.lastActive = lastActive;
-    }
+    public Instant getLastLogin() { return lastLogin; }
+    public void setLastLogin(Instant lastLogin) { this.lastLogin = lastLogin; }
 
     @PrePersist
     protected void onCreate() {
-        if (id == null) {
-            id = UUID.randomUUID();
-        }
-        if (lastActive == null) {
-            lastActive = Instant.now();
-        }
-        if (elo == 0) {
-            elo = 1000;
+        if (createdAt == null) {
+            createdAt = Instant.now();
         }
     }
 
@@ -106,9 +75,8 @@ public class PlayerEntity {
                "id=" + id +
                ", username='" + username + "'" +
                ", elo=" + elo +
-               ", wins=" + wins +
-               ", losses=" + losses +
-               ", lastActive=" + lastActive +
+               ", createdAt=" + createdAt +
+               ", lastLogin=" + lastLogin +
                '}';
     }
 }

@@ -24,6 +24,11 @@ public class LobbyUpdatePacket implements Packet {
     }
 
     @Override
+    public Object getPayload() {
+        return payload;
+    }
+
+    @Override
     public String toString() {
         return "LobbyUpdatePacket{" +
                "payload=" + payload +

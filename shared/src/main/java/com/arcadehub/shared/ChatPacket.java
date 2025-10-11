@@ -22,6 +22,11 @@ public class ChatPacket implements Packet {
     }
 
     @Override
+    public Object getPayload() {
+        return payload;
+    }
+
+    @Override
     public String toString() {
         return "ChatPacket{" +
                "payload=" + payload +

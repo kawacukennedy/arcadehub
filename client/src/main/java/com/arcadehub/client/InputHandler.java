@@ -2,6 +2,7 @@ package com.arcadehub.client;
 
 import com.arcadehub.client.network.ClientNetworkManager;
 import com.arcadehub.shared.InputPacket;
+import com.arcadehub.shared.InputPayload;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyEvent;
 import org.slf4j.Logger;
@@ -19,32 +20,37 @@ public class InputHandler {
     }
 
     private void handleKeyPressed(KeyEvent event) {
-        InputPacket.Action action = null;
+        String action = null;
         switch (event.getCode()) {
             case W:
             case UP:
-                action = InputPacket.Action.MOVE_UP;
+                action = "MOVE_UP";
                 break;
             case S:
             case DOWN:
-                action = InputPacket.Action.MOVE_DOWN;
+                action = "MOVE_DOWN";
                 break;
             case A:
             case LEFT:
-                action = InputPacket.Action.MOVE_LEFT;
+                action = "MOVE_LEFT";
                 break;
             case D:
             case RIGHT:
-                action = InputPacket.Action.MOVE_RIGHT;
+                action = "MOVE_RIGHT";
                 break;
             case SPACE:
-                action = InputPacket.Action.SHOOT;
+                action = "SHOOT";
                 break;
             // Add more key mappings as needed
         }
 
         if (action != null) {
-            networkManager.sendPacket(new InputPacket(action, System.currentTimeMillis()));
+            // TODO: Get username, current tick, compute signature
+            String username = "alice"; // placeholder
+            int tick = 0; // placeholder
+            String signature = ""; // placeholder
+            InputPayload payload = new InputPayload(username, action, tick, signature);
+            networkManager.sendPacket(new InputPacket(payload));
             logger.debug("Key pressed: {} -> Sent InputPacket: {}", event.getCode(), action);
         }
     }
