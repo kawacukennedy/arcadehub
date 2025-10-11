@@ -1,8 +1,10 @@
 package com.arcadehub.client.network;
 
 import com.arcadehub.shared.HeartbeatPacket;
+import com.arcadehub.shared.HeartbeatPayload;
 import com.arcadehub.shared.Packet;
 import com.arcadehub.shared.StateUpdatePacket;
+import com.arcadehub.shared.NetworkPacket;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
@@ -10,7 +12,7 @@ import io.netty.handler.timeout.IdleStateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ClientHandler extends SimpleChannelInboundHandler<Packet> {
+public class ClientHandler extends SimpleChannelInboundHandler<NetworkPacket> {
     private static final Logger logger = LoggerFactory.getLogger(ClientHandler.class);
 
     @Override
@@ -24,8 +26,11 @@ public class ClientHandler extends SimpleChannelInboundHandler<Packet> {
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Packet msg) throws Exception {
-        if (msg instanceof HeartbeatPacket) {
+    protected void channelRead0(ChannelHandlerContext ctx, NetworkPacket netPacket) throws Exception {
+        Object payload = netPacket.getPayload();
+        if (payload instanceof Packet) {
+            Packet msg = (Packet) payload;
+            if (msg instanceof HeartbeatPacket) {
             logger.debug("Received Heartbeat from server.");
         } else if (msg instanceof StateUpdatePacket) {
             StateUpdatePacket stateUpdate = (StateUpdatePacket) msg;
@@ -35,6 +40,9 @@ public class ClientHandler extends SimpleChannelInboundHandler<Packet> {
             logger.info("Received packet from server: {}", msg.getClass().getSimpleName());
             // TODO: Handle other packet types (ChatPacket, LobbyUpdatePacket, LeaderboardResponsePacket)
         }
+        } else {
+            logger.warn("Unknown payload type: {}", payload.getClass().getName());
+        }
     }
 
     @Override
@@ -43,7 +51,8 @@ public class ClientHandler extends SimpleChannelInboundHandler<Packet> {
             IdleStateEvent e = (IdleStateEvent) evt;
             if (e.state() == IdleState.WRITER_IDLE) {
                 // Send heartbeat to server to keep connection alive
-                ctx.writeAndFlush(new HeartbeatPacket(System.currentTimeMillis()));
+                HeartbeatPayload hbPayload = new HeartbeatPayload(System.currentTimeMillis());
+                ctx.writeAndFlush(new NetworkPacket("HEARTBEAT", 1, null, hbPayload));
                 logger.debug("Sending Heartbeat to server.");
             }
         }

@@ -1,7 +1,9 @@
 package com.arcadehub.server;
 
 import com.arcadehub.shared.Packet;
+import com.arcadehub.shared.NetworkPacket;
 import com.arcadehub.shared.HeartbeatPacket;
+import com.arcadehub.shared.HeartbeatPayload;
 import com.arcadehub.shared.InputPacket;
 import com.arcadehub.shared.Player;
 import com.arcadehub.shared.ChatPacket;
@@ -26,7 +28,7 @@ import java.util.UUID;
 import java.time.Instant;
 import java.util.stream.Collectors;
 
-public class ServerHandler extends SimpleChannelInboundHandler<Packet> {
+public class ServerHandler extends SimpleChannelInboundHandler<NetworkPacket> {
     private static final Logger logger = LoggerFactory.getLogger(ServerHandler.class);
 
     private final LobbyManager lobbyManager;
@@ -53,10 +55,14 @@ public class ServerHandler extends SimpleChannelInboundHandler<Packet> {
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Packet msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, NetworkPacket netPacket) throws Exception {
+        Object payload = netPacket.getPayload();
+        if (payload instanceof Packet) {
+            Packet msg = (Packet) payload;
         if (msg instanceof HeartbeatPacket) {
             // Respond to heartbeat to keep connection alive
-            ctx.writeAndFlush(new HeartbeatPacket(System.currentTimeMillis()));
+            HeartbeatPayload hbPayload = new HeartbeatPayload(System.currentTimeMillis());
+            ctx.writeAndFlush(new NetworkPacket("HEARTBEAT", 1, null, hbPayload));
         } else if (msg instanceof InputPacket) {
             InputPacket inputPacket = (InputPacket) msg;
             // For now, we'll assume a player is associated with the channel for anti-cheat validation.
@@ -105,6 +111,9 @@ public class ServerHandler extends SimpleChannelInboundHandler<Packet> {
             ctx.writeAndFlush(new LeaderboardResponsePacket(topPlayers));
         } else {
             logger.warn("Unknown packet type received: {}", msg.getClass().getName());
+        }
+        } else {
+            logger.warn("Unknown payload type: {}", payload.getClass().getName());
         }
     }
 
