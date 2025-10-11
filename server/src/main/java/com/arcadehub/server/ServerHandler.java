@@ -10,6 +10,7 @@ import com.arcadehub.shared.ChatPacket;
 import com.arcadehub.shared.JoinLobbyPacket;
 import com.arcadehub.shared.JoinAcceptPayload;
 import com.arcadehub.shared.ErrorPayload;
+import com.arcadehub.shared.InputEnvelope;
 import com.arcadehub.shared.Lobby;
 import com.arcadehub.shared.GameType;
 import com.arcadehub.shared.LeaderboardRequestPacket;
@@ -80,7 +81,13 @@ public class ServerHandler extends SimpleChannelInboundHandler<NetworkPacket> {
             Player dummyPlayer = new Player(UUID.randomUUID(), inputPacket.getPayload().getUsername(), 1000, 0, 0, Instant.now());
             if (antiCheatValidator.validateInput(dummyPlayer, inputPacket)) {
                 logger.debug("Received valid InputPacket: {}", inputPacket.getPayload().getAction());
-                // TODO: Process input
+                // Queue input for game loop
+                InputEnvelope envelope = new InputEnvelope(System.nanoTime(), inputPacket.getPayload().getTick(),
+                    inputPacket.getPayload().getUsername(), inputPacket.getPayload().getAction(),
+                    inputPacket.getPayload().getSignature(), ""); // TODO: rawJson
+                // TODO: Get lobbyId from player
+                UUID lobbyId = UUID.fromString("00000000-0000-0000-0000-000000000000"); // placeholder
+                gameLoopManager.queueInput(lobbyId, envelope);
             } else {
                 logger.warn("Input failed anti-cheat validation.");
             }
