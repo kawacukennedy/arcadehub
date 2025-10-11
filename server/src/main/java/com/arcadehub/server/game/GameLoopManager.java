@@ -120,9 +120,19 @@ public class GameLoopManager {
                         }
                     }
                 }
+                // For Pong, move paddles
+                for (Paddle paddle : paddles) {
+                    if (paddle.getUsername().equals(env.getUsername())) {
+                        switch (action) {
+                            case "MOVE_UP": paddle.setPosition(new Position(paddle.getPosition().getX(), paddle.getPosition().getY() - 5)); break;
+                            case "MOVE_DOWN": paddle.setPosition(new Position(paddle.getPosition().getX(), paddle.getPosition().getY() + 5)); break;
+                        }
+                    }
+                }
             }
             // Update game state
             updateSnakes();
+            updatePong();
             // Create state
             GameState state = new GameState(lobbyId.toString(), currentTick, new ArrayList<>(snakes), new ArrayList<>(paddles), new ArrayList<>(balls), new HashMap<>(scores), seed);
             // Append to replay
@@ -150,6 +160,20 @@ public class GameLoopManager {
                 snake.getBody().add(0, newHead);
                 // TODO: Remove tail unless ate food
                 // TODO: Check collision
+            }
+        }
+
+        private void updatePong() {
+            for (Ball ball : balls) {
+                // Move ball
+                ball.setPosition(new Position(ball.getPosition().getX() + ball.getVelocityX(),
+                                             ball.getPosition().getY() + ball.getVelocityY()));
+                // TODO: Collision with walls, paddles
+                // Bounce off top/bottom
+                if (ball.getPosition().getY() <= 0 || ball.getPosition().getY() >= 600) {
+                    ball.setVelocityY(-ball.getVelocityY());
+                }
+                // TODO: Score if off left/right
             }
         }
 
