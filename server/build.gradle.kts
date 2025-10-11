@@ -42,4 +42,8 @@ dependencies {
     // Observability
     implementation("io.micrometer:micrometer-core:1.12.2")
     implementation("io.micrometer:micrometer-registry-prometheus:1.12.2")
+
+    // Testing
+    testImplementation("org.testcontainers:junit-jupiter:1.19.3")
+    testImplementation("org.testcontainers:postgresql:1.19.3")
 }
