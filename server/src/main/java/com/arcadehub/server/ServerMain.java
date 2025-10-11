@@ -10,6 +10,7 @@ import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.codec.http.HttpServerCodec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.arcadehub.server.lobby.LobbyManager;
@@ -49,12 +50,22 @@ public class ServerMain {
             ChannelFuture gameFuture = gameBootstrap.bind(GAME_PORT).sync();
             logger.info("ArcadeHub Game Server started on port {}", GAME_PORT);
 
+            // Admin HTTP server
+            ServerBootstrap httpBootstrap = new ServerBootstrap();
+            httpBootstrap.group(bossGroup, workerGroup)
+                         .channel(NioServerSocketChannel.class)
+                         .handler(new LoggingHandler(LogLevel.INFO))
+                         .childHandler(new HttpServerInitializer());
+            ChannelFuture httpFuture = httpBootstrap.bind(8081).sync();
+            logger.info("ArcadeHub Admin HTTP Server started on port 8081");
+
             // For now, we'll use the same initializer for chat, but it can be separated later if needed.
             // ChannelFuture chatFuture = gameBootstrap.bind(CHAT_PORT).sync();
             // logger.info("ArcadeHub Chat Server started on port {}", CHAT_PORT);
 
             // Wait until the server socket is closed.
             gameFuture.channel().closeFuture().sync();
+            httpFuture.channel().closeFuture().sync();
             // chatFuture.channel().closeFuture().sync();
         } finally {
             bossGroup.shutdownGracefully();
