@@ -23,8 +23,12 @@ class PlayerEntityTest {
 
     @Test
     void testPlayerPersistence() {
-        // Create EMF with test DB
-        EntityManagerFactory emf = Persistence.createEntityManagerFactory("arcadehub-test");
+        // Set system properties for test DB
+        System.setProperty("jakarta.persistence.jdbc.url", postgres.getJdbcUrl());
+        System.setProperty("jakarta.persistence.jdbc.user", postgres.getUsername());
+        System.setProperty("jakarta.persistence.jdbc.password", postgres.getPassword());
+
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory("arcadehub");
         EntityManager em = emf.createEntityManager();
 
         PlayerEntity player = new PlayerEntity("alice");

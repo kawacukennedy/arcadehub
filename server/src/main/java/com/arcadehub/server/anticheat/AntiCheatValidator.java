@@ -65,11 +65,9 @@ public class AntiCheatValidator {
         }
     }
 
-    // TODO: Implement penalty system (warning, kick, ban)
     public void applyPenalty(Player player, int errorCode) {
         logger.warn("Applying penalty for player {} with error code {}", player.getUsername(), errorCode);
-        // 1st_offense: "Warning log"
-        // 2nd_offense: "Temporary kick (300s)"
-        // 3rd_offense: "Permanent ban (DB flag)"
+        // For now, just log
+        // TODO: Implement kick/ban logic
     }
 }

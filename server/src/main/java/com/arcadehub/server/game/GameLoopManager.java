@@ -4,6 +4,7 @@ import com.arcadehub.shared.*;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.Random;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -76,8 +77,10 @@ public class GameLoopManager {
         private List<Snake> snakes = new ArrayList<>();
         private List<Ball> balls = new ArrayList<>();
         private List<Paddle> paddles = new ArrayList<>();
+        private List<Food> foods = new ArrayList<>();
         private Map<String, Integer> scores = new HashMap<>();
         private long seed = 12345;
+        private boolean matchEnded = false;
         private PrintWriter replayWriter;
 
         public LobbyGameLoop(UUID lobbyId, ConcurrentLinkedQueue<InputEnvelope> inputQueue) {
@@ -86,6 +89,7 @@ public class GameLoopManager {
             this.inputQueue = inputQueue;
             // Init game state, e.g., add snake
             snakes.add(new Snake("alice", List.of(new Position(10, 10)), Direction.RIGHT));
+            spawnFood();
             // Init replay
             try {
                 Path replayPath = Paths.get("replays", lobbyId + ".ndjson");
@@ -151,6 +155,15 @@ public class GameLoopManager {
             StateUpdatePayload payload = new StateUpdatePayload(state, System.currentTimeMillis());
             // TODO: Send to clients
             logger.debug("Tick {} for lobby {}, snakes: {}", currentTick, lobbyId, snakes.size());
+
+            if (matchEnded) {
+                // Update ELO
+                updateElo();
+                // Archive replay
+                archiveReplay();
+                // Stop loop
+                stop();
+            }
         }
 
         private void updateSnakes() {
@@ -164,8 +177,24 @@ public class GameLoopManager {
                     case RIGHT -> new Position(head.getX() + 1, head.getY());
                 };
                 snake.getBody().add(0, newHead);
-                // TODO: Remove tail unless ate food
-                // TODO: Check collision
+                // Check eat food
+                boolean ate = false;
+                for (Food food : foods) {
+                    if (newHead.getX() == food.getPosition().getX() && newHead.getY() == food.getPosition().getY()) {
+                        ate = true;
+                        foods.remove(food);
+                        spawnFood();
+                        break;
+                    }
+                }
+                if (!ate) {
+                    snake.getBody().remove(snake.getBody().size() - 1); // Remove tail
+                }
+                // Check collision
+                if (newHead.getX() < 0 || newHead.getX() >= 40 || newHead.getY() < 0 || newHead.getY() >= 30 ||
+                    snake.getBody().subList(1, snake.getBody().size()).contains(newHead)) {
+                    matchEnded = true;
+                }
             }
         }
 
@@ -174,12 +203,73 @@ public class GameLoopManager {
                 // Move ball
                 ball.setPosition(new Position(ball.getPosition().getX() + ball.getVelocityX(),
                                              ball.getPosition().getY() + ball.getVelocityY()));
-                // TODO: Collision with walls, paddles
                 // Bounce off top/bottom
                 if (ball.getPosition().getY() <= 0 || ball.getPosition().getY() >= 600) {
                     ball.setVelocityY(-ball.getVelocityY());
                 }
-                // TODO: Score if off left/right
+                // Paddle collision
+                for (Paddle paddle : paddles) {
+                    if (ball.getPosition().getX() < paddle.getPosition().getX() + 10 &&
+                        ball.getPosition().getX() + ball.getRadius() > paddle.getPosition().getX() &&
+                        ball.getPosition().getY() < paddle.getPosition().getY() + paddle.getHeight() &&
+                        ball.getPosition().getY() + ball.getRadius() > paddle.getPosition().getY()) {
+                        ball.setVelocityX(-ball.getVelocityX());
+                    }
+                }
+                // Score if off left/right
+                if (ball.getPosition().getX() < 0) {
+                    scores.put("player2", scores.getOrDefault("player2", 0) + 1);
+                    resetBall();
+                } else if (ball.getPosition().getX() > 800) {
+                    scores.put("player1", scores.getOrDefault("player1", 0) + 1);
+                    resetBall();
+                }
+                // Check win
+                if (scores.values().stream().anyMatch(s -> s >= 10)) {
+                    matchEnded = true;
+                }
+            }
+        }
+
+        private void resetBall() {
+            for (Ball ball : balls) {
+                ball.setPosition(new Position(400, 300));
+                ball.setVelocityX(-ball.getVelocityX()); // Change direction
+            }
+        }
+
+        private void spawnFood() {
+            Random rand = new Random(seed);
+            foods.add(new Food(new Position(rand.nextInt(40), rand.nextInt(30))));
+        }
+
+        private void updateElo() {
+            // Simple ELO: winner +10, loser -10
+            // TODO: Proper ELO formula
+            for (Map.Entry<String, Integer> entry : scores.entrySet()) {
+                if (entry.getValue() >= 10) {
+                    // Winner
+                    // leaderboardManager.updateElo(entry.getKey(), 10);
+                } else {
+                    // Loser
+                    // leaderboardManager.updateElo(entry.getKey(), -10);
+                }
+            }
+        }
+
+        private void archiveReplay() {
+            if (replayWriter != null) {
+                replayWriter.close();
+                // Move to archive
+                try {
+                    Path source = Paths.get("replays", lobbyId + ".ndjson");
+                    Path target = Paths.get("replays/archive", lobbyId + ".ndjson.gz");
+                    Files.createDirectories(target.getParent());
+                    // TODO: Compress to gz
+                    Files.move(source, target);
+                } catch (IOException e) {
+                    logger.error("Failed to archive replay", e);
+                }
             }
         }
 
