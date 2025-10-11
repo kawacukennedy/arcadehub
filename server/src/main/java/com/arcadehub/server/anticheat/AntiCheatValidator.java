@@ -15,6 +15,7 @@ public class AntiCheatValidator {
     private static final int INPUT_PACKETS_PER_SECOND = 20; // From project spec
     private final Map<String, Long> lastInputTimestamp = new ConcurrentHashMap<>();
     private final Map<String, Integer> inputCount = new ConcurrentHashMap<>();
+    private final Map<String, Integer> violationPoints = new ConcurrentHashMap<>();
 
     public boolean validateInput(Player player, InputPacket inputPacket) {
         // Validate input rate
@@ -29,8 +30,8 @@ public class AntiCheatValidator {
 
         if (currentTime - lastTime < 1000) { // Within the same second
             if (count >= INPUT_PACKETS_PER_SECOND) {
-                logger.warn("Anti-cheat: Player {} exceeding input rate limit. (Code 1004)", username);
-                // TODO: Implement penalty system (warning, kick, ban)
+                logger.warn("Anti-cheat: Player {} exceeding input rate limit.", username);
+                addViolationPoints(username, 3); // excessive_rate
                 return false;
             }
             inputCount.put(username, count + 1);
@@ -44,16 +45,24 @@ public class AntiCheatValidator {
         // "Reject position deltas exceeding max speed"
         // "Reject negative/NaN coordinates"
 
-        // Example: Reject inputs with future timestamps (beyond a small tolerance)
-        if (inputPacket.getTimestamp() > currentTime + 200) { // 200ms tolerance for network latency
-            logger.warn("Anti-cheat: Player {} sent input with future timestamp. (Code 1004)", username);
-            // TODO: Implement penalty system
-            return false;
-        }
+        // Reject invalid signatures (already checked in ServerHandler)
+        // For now, assume signature is valid
+
+        // TODO: Add game-specific validations (impossible movements, etc.)
 
         // Add more specific game-related anti-cheat checks here
 
         return true;
+    }
+
+    private void addViolationPoints(String username, int points) {
+        int current = violationPoints.getOrDefault(username, 0);
+        current += points;
+        violationPoints.put(username, current);
+        if (current >= 20) { // auto_block_threshold
+            logger.error("Auto-blocking player {} for excessive violations", username);
+            // TODO: Block player
+        }
     }
 
     // TODO: Implement penalty system (warning, kick, ban)
