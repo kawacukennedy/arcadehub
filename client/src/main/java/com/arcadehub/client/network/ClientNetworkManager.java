@@ -27,6 +27,8 @@ public class ClientNetworkManager {
     private static final String HOST = "localhost"; // TODO: Make configurable
     private static final int PORT = 5050; // Game port
 
+    private static String sessionToken;
+
     private EventLoopGroup group;
     private Channel channel;
 
@@ -85,5 +87,13 @@ public class ClientNetworkManager {
 
     public boolean isConnected() {
         return channel != null && channel.isActive();
+    }
+
+    public static String getSessionToken() {
+        return sessionToken;
+    }
+
+    public static void setSessionToken(String token) {
+        sessionToken = token;
     }
 }

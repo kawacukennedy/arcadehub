@@ -2,6 +2,7 @@ package com.arcadehub.client.network;
 
 import com.arcadehub.shared.HeartbeatPacket;
 import com.arcadehub.shared.HeartbeatPayload;
+import com.arcadehub.shared.JoinAcceptPacket;
 import com.arcadehub.shared.Packet;
 import com.arcadehub.shared.StateUpdatePacket;
 import com.arcadehub.shared.NetworkPacket;
@@ -31,8 +32,12 @@ public class ClientHandler extends SimpleChannelInboundHandler<NetworkPacket> {
         if (payload instanceof Packet) {
             Packet msg = (Packet) payload;
             if (msg instanceof HeartbeatPacket) {
-            logger.debug("Received Heartbeat from server.");
-        } else if (msg instanceof StateUpdatePacket) {
+                logger.debug("Received Heartbeat from server.");
+            } else if (msg instanceof JoinAcceptPacket) {
+                JoinAcceptPacket accept = (JoinAcceptPacket) msg;
+                ClientNetworkManager.setSessionToken(netPacket.getSessionId());
+                logger.info("Joined lobby, session: {}", netPacket.getSessionId());
+            } else if (msg instanceof StateUpdatePacket) {
             StateUpdatePacket stateUpdate = (StateUpdatePacket) msg;
             logger.info("Received StateUpdatePacket from server at timestamp: {}", stateUpdate.getTimestamp());
             // TODO: Update game UI based on stateUpdate

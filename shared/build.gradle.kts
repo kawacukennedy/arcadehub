@@ -19,4 +19,7 @@ dependencies {
 
     // JSON Schema validation
     // implementation("org.everit.json.schema:org.everit.json.schema:1.14.3")
+
+    // Crypto
+    implementation("commons-codec:commons-codec:1.16.0")
 }

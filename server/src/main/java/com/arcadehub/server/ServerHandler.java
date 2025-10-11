@@ -8,6 +8,8 @@ import com.arcadehub.shared.InputPacket;
 import com.arcadehub.shared.Player;
 import com.arcadehub.shared.ChatPacket;
 import com.arcadehub.shared.JoinLobbyPacket;
+import com.arcadehub.shared.JoinAcceptPayload;
+import com.arcadehub.shared.ErrorPayload;
 import com.arcadehub.shared.Lobby;
 import com.arcadehub.shared.GameType;
 import com.arcadehub.shared.LeaderboardRequestPacket;
@@ -35,12 +37,14 @@ public class ServerHandler extends SimpleChannelInboundHandler<NetworkPacket> {
     private final GameLoopManager gameLoopManager;
     private final LeaderboardManager leaderboardManager;
     private final AntiCheatValidator antiCheatValidator;
+    private final SessionManager sessionManager;
 
     public ServerHandler(LobbyManager lobbyManager, GameLoopManager gameLoopManager, LeaderboardManager leaderboardManager) {
         this.lobbyManager = lobbyManager;
         this.gameLoopManager = gameLoopManager;
         this.leaderboardManager = leaderboardManager;
-        this.antiCheatValidator = new AntiCheatValidator(); // Instantiate AntiCheatValidator
+        this.antiCheatValidator = new AntiCheatValidator();
+        this.sessionManager = new SessionManager();
     }
 
     @Override
@@ -65,41 +69,51 @@ public class ServerHandler extends SimpleChannelInboundHandler<NetworkPacket> {
             ctx.writeAndFlush(new NetworkPacket("HEARTBEAT", 1, null, hbPayload));
         } else if (msg instanceof InputPacket) {
             InputPacket inputPacket = (InputPacket) msg;
-            // For now, we'll assume a player is associated with the channel for anti-cheat validation.
-            // In a real scenario, player information would be retrieved from a session or authentication.
-            Player dummyPlayer = new Player(UUID.randomUUID(), "dummyUser", 1000, 0, 0, Instant.now()); // Placeholder
+            String sessionToken = netPacket.getSessionId();
+            if (sessionToken == null || !sessionManager.verifySignature(sessionToken, inputPacket.getPayload().getTick(), inputPacket.getPayload().getAction(), inputPacket.getPayload().getSignature())) {
+                logger.warn("Invalid signature for input from {}", ctx.channel().remoteAddress());
+                ErrorPayload errorPayload = new ErrorPayload("INVALID_SIGNATURE", "HMAC signature mismatch");
+                ctx.writeAndFlush(new NetworkPacket("ERROR", 1, null, errorPayload));
+                return;
+            }
+            // TODO: Get player from session
+            Player dummyPlayer = new Player(UUID.randomUUID(), inputPacket.getPayload().getUsername(), 1000, 0, 0, Instant.now());
             if (antiCheatValidator.validateInput(dummyPlayer, inputPacket)) {
-                logger.debug("Received InputPacket from {}: {}", ctx.channel().remoteAddress(), inputPacket.getAction());
-                // TODO: Process input based on game state and player's current lobby
-                // Example: gameLoopManager.startGame(lobbyManager.getLobbyById(player.getLobbyId()), /* player channels */);
+                logger.debug("Received valid InputPacket: {}", inputPacket.getPayload().getAction());
+                // TODO: Process input
             } else {
-                logger.warn("InputPacket from {} failed anti-cheat validation.", ctx.channel().remoteAddress());
-                // Anti-cheat validator will handle penalties
+                logger.warn("Input failed anti-cheat validation.");
             }
         } else if (msg instanceof ChatPacket) {
             ChatPacket chatPacket = (ChatPacket) msg;
             logger.info("Chat message from {}: {}", chatPacket.getSenderUsername(), chatPacket.getMessage());
             // TODO: Broadcast chat message to other clients in the same lobby
         } else if (msg instanceof JoinLobbyPacket) {
-            JoinLobbyPacket joinLobbyPacket = (JoinLobbyPacket) msg;
-            logger.info("Client {} wants to join lobby {}", joinLobbyPacket.getUsername(), joinLobbyPacket.getLobbyId());
-            // For now, create a dummy player. In a real scenario, this would come from authentication.
-            Player player = new Player(UUID.randomUUID(), joinLobbyPacket.getUsername(), 1000, 0, 0, Instant.now());
-            boolean joined = lobbyManager.joinLobby(joinLobbyPacket.getLobbyId(), player, ctx);
+            JoinLobbyPacket joinPacket = (JoinLobbyPacket) msg;
+            String username = joinPacket.getPayload().getUsername();
+            logger.info("Client {} wants to join lobby {}", username, joinPacket.getPayload().getLobbyId());
+            // Create session
+            String sessionToken = sessionManager.createSession();
+            // For now, dummy player
+            Player player = new Player(UUID.randomUUID(), username, 1000, 0, 0, Instant.now());
+            boolean joined = lobbyManager.joinLobby(joinPacket.getPayload().getLobbyId(), player, ctx);
             if (joined) {
-                // TODO: Send success response to client and update other lobby members
-                logger.info("Player {} successfully joined lobby {}", player.getUsername(), joinLobbyPacket.getLobbyId());
-                // Example: gameLoopManager.startGame(lobbyManager.getLobbyById(joinLobbyPacket.getLobbyId()), /* player channels */);
+                // Send JOIN_ACCEPT
+                JoinAcceptPayload acceptPayload = new JoinAcceptPayload(sessionToken, player.getId().toString(), 0); // currentTick 0
+                ctx.writeAndFlush(new NetworkPacket("JOIN_ACCEPT", 1, sessionToken, acceptPayload));
+                logger.info("Player {} joined lobby {}", username, joinPacket.getPayload().getLobbyId());
             } else {
-                // If joining failed, try to create a new lobby
-                Lobby newLobby = lobbyManager.createLobby("Lobby for " + player.getUsername(), GameType.SNAKE, 2, player.getUsername());
+                // Create new lobby
+                Lobby newLobby = lobbyManager.createLobby("Lobby for " + username, GameType.SNAKE, 2, username);
                 if (newLobby != null) {
                     lobbyManager.joinLobby(newLobby.getId(), player, ctx);
-                    logger.info("Player {} created and joined new lobby {}", player.getUsername(), newLobby.getId());
-                    // Example: gameLoopManager.startGame(newLobby, /* player channels */);
+                    JoinAcceptPayload acceptPayload = new JoinAcceptPayload(sessionToken, player.getId().toString(), 0);
+                    ctx.writeAndFlush(new NetworkPacket("JOIN_ACCEPT", 1, sessionToken, acceptPayload));
+                    logger.info("Player {} created and joined new lobby {}", username, newLobby.getId());
                 } else {
-                    // TODO: Send failure response to client
-                    logger.warn("Player {} failed to join or create lobby {}", player.getUsername(), joinLobbyPacket.getLobbyId());
+                    // Send error
+                    ErrorPayload errorPayload = new ErrorPayload("LOBBY_FULL", "Unable to join or create lobby");
+                    ctx.writeAndFlush(new NetworkPacket("ERROR", 1, null, errorPayload));
                 }
             }
         } else if (msg instanceof LeaderboardRequestPacket) {
