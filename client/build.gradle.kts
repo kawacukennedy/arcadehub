@@ -28,8 +28,8 @@ tasks.jar {
 }
 
 dependencies {
-    // Common module
-    implementation(project(":common"))
+    // Shared module
+    implementation(project(":shared"))
 
     // Networking
     implementation("io.netty:netty-all:4.1.108.Final")

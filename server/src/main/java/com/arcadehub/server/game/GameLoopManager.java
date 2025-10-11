@@ -1,8 +1,8 @@
 package com.arcadehub.server.game;
 
-import com.arcadehub.common.GameType;
-import com.arcadehub.common.Lobby;
-import com.arcadehub.common.StateUpdatePacket;
+import com.arcadehub.shared.GameType;
+import com.arcadehub.shared.Lobby;
+import com.arcadehub.shared.StateUpdatePacket;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

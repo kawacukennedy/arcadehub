@@ -1,11 +1,11 @@
 package com.arcadehub.server.game;
 
-import com.arcadehub.common.Ball;
-import com.arcadehub.common.Food;
-import com.arcadehub.common.Paddle;
-import com.arcadehub.common.Position;
-import com.arcadehub.common.Snake;
-import com.arcadehub.common.GameType;
+import com.arcadehub.shared.Ball;
+import com.arcadehub.shared.Food;
+import com.arcadehub.shared.Paddle;
+import com.arcadehub.shared.Position;
+import com.arcadehub.shared.Snake;
+import com.arcadehub.shared.GameType;
 
 import java.util.ArrayList;
 import java.util.List;

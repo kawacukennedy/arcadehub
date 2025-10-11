@@ -1,7 +1,7 @@
 package com.arcadehub.server.anticheat;
 
-import com.arcadehub.common.InputPacket;
-import com.arcadehub.common.Player;
+import com.arcadehub.shared.InputPacket;
+import com.arcadehub.shared.Player;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

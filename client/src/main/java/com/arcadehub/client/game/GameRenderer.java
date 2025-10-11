@@ -2,12 +2,12 @@ package com.arcadehub.client.game;
 
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.arcadehub.common.Ball;
-import com.arcadehub.common.Food;
-import com.arcadehub.common.GameState;
-import com.arcadehub.common.Paddle;
-import com.arcadehub.common.Position;
-import com.arcadehub.common.Snake;
+import com.arcadehub.shared.Ball;
+import com.arcadehub.shared.Food;
+import com.arcadehub.shared.GameState;
+import com.arcadehub.shared.Paddle;
+import com.arcadehub.shared.Position;
+import com.arcadehub.shared.Snake;
 
 import java.util.HashMap;
 import java.util.List;

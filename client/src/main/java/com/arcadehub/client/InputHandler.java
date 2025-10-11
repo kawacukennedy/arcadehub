@@ -1,7 +1,7 @@
 package com.arcadehub.client;
 
 import com.arcadehub.client.network.ClientNetworkManager;
-import com.arcadehub.common.InputPacket;
+import com.arcadehub.shared.InputPacket;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyEvent;
 import org.slf4j.Logger;

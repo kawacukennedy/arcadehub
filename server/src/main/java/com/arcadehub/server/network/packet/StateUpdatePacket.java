@@ -1,10 +1,10 @@
 package com.arcadehub.server.network.packet;
 
-import com.arcadehub.common.Ball;
-import com.arcadehub.common.Food;
-import com.arcadehub.common.Paddle;
-import com.arcadehub.common.Snake;
-import com.arcadehub.common.Position;
+import com.arcadehub.shared.Ball;
+import com.arcadehub.shared.Food;
+import com.arcadehub.shared.Paddle;
+import com.arcadehub.shared.Snake;
+import com.arcadehub.shared.Position;
 
 import java.util.List;
 import java.util.Map;

@@ -1,0 +1,19 @@
+{
+  "$id": "shared/schemas/input.json",
+  "type": "object",
+  "required": ["type", "version", "payload"],
+  "properties": {
+    "type": { "const": "INPUT" },
+    "version": { "type": "integer", "minimum": 1 },
+    "payload": {
+      "type": "object",
+      "required": ["username", "action", "tick", "signature"],
+      "properties": {
+        "username": { "type": "string" },
+        "action": { "type": "string" },
+        "tick": { "type": "integer" },
+        "signature": { "type": "string" }
+      }
+    }
+  }
+}

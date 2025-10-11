@@ -1,6 +1,6 @@
 package com.arcadehub.client.network;
 
-import com.arcadehub.common.Packet;
+import com.arcadehub.shared.Packet;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;

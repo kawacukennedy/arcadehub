@@ -1,0 +1,18 @@
+{
+  "$id": "shared/schemas/join_lobby.json",
+  "type": "object",
+  "required": ["type", "version", "payload"],
+  "properties": {
+    "type": { "const": "JOIN_LOBBY" },
+    "version": { "type": "integer", "minimum": 1 },
+    "payload": {
+      "type": "object",
+      "required": ["username"],
+      "properties": {
+        "username": { "type": "string", "maxLength": 32 },
+        "lobbyId": { "type": ["string", "null"], "format": "uuid" },
+        "clientVersion": { "type": "string" }
+      }
+    }
+  }
+}

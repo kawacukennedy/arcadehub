@@ -1,7 +1,7 @@
 
 package com.arcadehub.server.network.packet;
 
-import com.arcadehub.common.Lobby;
+import com.arcadehub.shared.Lobby;
 
 public class LobbyUpdatePacket extends BasePacket {
 

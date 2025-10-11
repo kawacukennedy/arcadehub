@@ -1,5 +1,6 @@
 plugins {
     application
+    id("org.flywaydb.flyway") version "10.0.1"
 }
 
 application {
@@ -13,8 +14,8 @@ tasks.register<JavaExec>("runServer") {
 }
 
 dependencies {
-    // Common module
-    implementation(project(":common"))
+    // Shared module
+    implementation(project(":shared"))
 
     // Networking
     implementation("io.netty:netty-all:4.1.108.Final")
@@ -33,4 +34,8 @@ dependencies {
     // JAXB for persistence.xml parsing
     implementation("jakarta.xml.bind:jakarta.xml.bind-api:4.0.0")
     runtimeOnly("org.glassfish.jaxb:jaxb-runtime:4.0.0")
+
+    // Database migration
+    implementation("org.flywaydb:flyway-core:10.0.1")
+    implementation("org.flywaydb:flyway-database-postgresql:10.0.1")
 }

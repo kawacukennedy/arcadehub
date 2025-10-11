@@ -1,7 +1,7 @@
 
 package com.arcadehub.server.network.packet;
 
-import com.arcadehub.common.Player;
+import com.arcadehub.shared.Player;
 
 import java.util.List;
 

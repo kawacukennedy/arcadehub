@@ -2,7 +2,7 @@ package com.arcadehub.client.network;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
-import com.arcadehub.common.Packet;
+import com.arcadehub.shared.Packet;
 
 import java.io.IOException;
 import java.util.UUID;

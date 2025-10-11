@@ -1,15 +1,15 @@
 package com.arcadehub.server;
 
-import com.arcadehub.common.Packet;
-import com.arcadehub.common.HeartbeatPacket;
-import com.arcadehub.common.InputPacket;
-import com.arcadehub.common.Player;
-import com.arcadehub.common.ChatPacket;
-import com.arcadehub.common.JoinLobbyPacket;
-import com.arcadehub.common.Lobby;
-import com.arcadehub.common.GameType;
-import com.arcadehub.common.LeaderboardRequestPacket;
-import com.arcadehub.common.LeaderboardResponsePacket;
+import com.arcadehub.shared.Packet;
+import com.arcadehub.shared.HeartbeatPacket;
+import com.arcadehub.shared.InputPacket;
+import com.arcadehub.shared.Player;
+import com.arcadehub.shared.ChatPacket;
+import com.arcadehub.shared.JoinLobbyPacket;
+import com.arcadehub.shared.Lobby;
+import com.arcadehub.shared.GameType;
+import com.arcadehub.shared.LeaderboardRequestPacket;
+import com.arcadehub.shared.LeaderboardResponsePacket;
 import com.arcadehub.server.anticheat.AntiCheatValidator;
 import com.arcadehub.server.game.GameLoopManager;
 import com.arcadehub.server.leaderboard.LeaderboardManager;

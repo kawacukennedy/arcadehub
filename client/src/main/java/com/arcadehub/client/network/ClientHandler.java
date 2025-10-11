@@ -1,8 +1,8 @@
 package com.arcadehub.client.network;
 
-import com.arcadehub.common.HeartbeatPacket;
-import com.arcadehub.common.Packet;
-import com.arcadehub.common.StateUpdatePacket;
+import com.arcadehub.shared.HeartbeatPacket;
+import com.arcadehub.shared.Packet;
+import com.arcadehub.shared.StateUpdatePacket;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;

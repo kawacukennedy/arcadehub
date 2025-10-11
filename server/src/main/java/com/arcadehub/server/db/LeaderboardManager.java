@@ -1,6 +1,6 @@
 package com.arcadehub.server.db;
 
-import com.arcadehub.common.Player;
+import com.arcadehub.shared.Player;
 
 import javax.sql.DataSource;
 import java.util.List;

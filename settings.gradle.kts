@@ -11,4 +11,4 @@ pluginManagement {
 }
 
 rootProject.name = "ArcadeHub"
-include("client", "server", "common")
+include("client", "server", "shared", "tools")
