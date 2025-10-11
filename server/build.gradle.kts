@@ -38,4 +38,8 @@ dependencies {
     // Database migration
     implementation("org.flywaydb:flyway-core:10.0.1")
     implementation("org.flywaydb:flyway-database-postgresql:10.0.1")
+
+    // Observability
+    implementation("io.micrometer:micrometer-core:1.12.2")
+    implementation("io.micrometer:micrometer-registry-prometheus:1.12.2")
 }

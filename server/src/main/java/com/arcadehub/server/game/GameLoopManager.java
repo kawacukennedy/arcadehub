@@ -1,14 +1,11 @@
 package com.arcadehub.server.game;
 
-import com.arcadehub.shared.GameType;
-import com.arcadehub.shared.Lobby;
-import com.arcadehub.shared.StateUpdatePacket;
+import com.arcadehub.shared.*;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -51,6 +48,7 @@ public class GameLoopManager {
         private final UUID lobbyId;
         private final ScheduledThreadPoolExecutor executor;
         private volatile boolean running = true;
+        private int currentTick = 0;
 
         public LobbyGameLoop(UUID lobbyId) {
             this.lobbyId = lobbyId;
@@ -63,14 +61,18 @@ public class GameLoopManager {
 
         private void tick() {
             if (!running) return;
-            // TODO: Implement tick logic as per spec
-            // (1) read inputs queued up to tick N
-            // (2) apply deterministic update
-            // (3) resolve collisions
-            // (4) update ELO on match end
-            // (5) append immutable snapshot to replay stream
-            // (6) broadcast STATE_UPDATE(N)
-            logger.debug("Tick for lobby {}", lobbyId);
+            currentTick++;
+            // TODO: Implement full tick logic
+            // For now, create dummy GameState and broadcast
+            List<Snake> snakes = List.of(); // TODO
+            List<Paddle> paddles = List.of();
+            List<Ball> balls = List.of();
+            Map<String, Integer> scores = Map.of();
+            long seed = 12345; // TODO
+            GameState state = new GameState(lobbyId.toString(), currentTick, snakes, paddles, balls, scores, seed);
+            StateUpdatePayload payload = new StateUpdatePayload(state, System.currentTimeMillis());
+            // TODO: Broadcast to players in lobby
+            logger.debug("Tick {} for lobby {}", currentTick, lobbyId);
         }
 
         public void stop() {
