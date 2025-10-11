@@ -8,6 +8,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.arcadehub.server.lobby.LobbyManager;
@@ -26,6 +28,12 @@ public class ServerMain {
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workerGroup = new NioEventLoopGroup();
 
+        // TLS context - for dev, self-signed
+        SslContext sslContext = SslContextBuilder.forServer(
+            getClass().getResourceAsStream("/certs/server.crt"),
+            getClass().getResourceAsStream("/certs/server.key")
+        ).build();
+
         try {
             LobbyManager lobbyManager = new LobbyManager();
             GameLoopManager gameLoopManager = new GameLoopManager();
@@ -35,7 +43,7 @@ public class ServerMain {
             gameBootstrap.group(bossGroup, workerGroup)
                          .channel(NioServerSocketChannel.class)
                          .handler(new LoggingHandler(LogLevel.INFO))
-                         .childHandler(new ServerInitializer(lobbyManager, gameLoopManager, leaderboardManager)); // Pass managers to initializer
+                         .childHandler(new ServerInitializer(sslContext, lobbyManager, gameLoopManager, leaderboardManager)); // Pass managers to initializer
 
             // Bind and start to accept incoming connections.
             ChannelFuture gameFuture = gameBootstrap.bind(GAME_PORT).sync();

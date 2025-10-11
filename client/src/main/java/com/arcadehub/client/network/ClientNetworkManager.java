@@ -14,6 +14,9 @@ import io.netty.handler.codec.serialization.ClassResolvers;
 import io.netty.handler.codec.serialization.ObjectDecoder;
 import io.netty.handler.codec.serialization.ObjectEncoder;
 import io.netty.handler.timeout.IdleStateHandler;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +32,12 @@ public class ClientNetworkManager {
 
     public void connect() throws Exception {
         group = new NioEventLoopGroup();
+
+        // TLS context for client - trust self-signed for dev
+        SslContext sslContext = SslContextBuilder.forClient()
+            .trustManager(InsecureTrustManagerFactory.INSTANCE)
+            .build();
+
         try {
             Bootstrap b = new Bootstrap();
             b.group(group)
@@ -37,6 +46,7 @@ public class ClientNetworkManager {
                  @Override
                  public void initChannel(SocketChannel ch) throws Exception {
                      ch.pipeline().addLast(
+                             sslContext.newHandler(ch.alloc(), HOST, PORT),
                              new IdleStateHandler(0, 5, 0, TimeUnit.SECONDS), // Write idle for heartbeat
                              new ObjectEncoder(),
                              new ObjectDecoder(ClassResolvers.weakCachingConcurrentResolver(getClass().getClassLoader())),
