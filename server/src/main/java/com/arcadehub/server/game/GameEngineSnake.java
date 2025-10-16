@@ -48,7 +48,6 @@ public class GameEngineSnake {
     }
 
     private void moveSnake(Snake snake) {
-        // Move head in direction, add to body, remove tail if no food eaten
         Position head = snake.getHeadPosition();
         Position newHead = new Position(head.getX(), head.getY());
         switch (snake.getDirection()) {
@@ -58,33 +57,79 @@ public class GameEngineSnake {
             case RIGHT: newHead.setX(newHead.getX() + 1); break;
         }
         snake.getBody().add(0, newHead);
-        // TODO: Check if food eaten, else remove tail
+        // Check food
+        boolean ate = foods.removeIf(f -> f.getPosition().equals(newHead));
+        if (!ate) {
+            snake.getBody().remove(snake.getBody().size() - 1);
+        }
     }
 
     private void checkCollisions() {
-        // Wall, self, other snakes
-        // TODO: Implement
+        Set<String> toRemove = new HashSet<>();
+        for (Snake snake : players.values()) {
+            Position head = snake.getHeadPosition();
+            // Wall
+            if (head.getX() < 0 || head.getX() >= GRID_WIDTH || head.getY() < 0 || head.getY() >= GRID_HEIGHT) {
+                toRemove.add(snake.getUsername());
+                continue;
+            }
+            // Self
+            if (snake.getBody().subList(1, snake.getBody().size()).contains(head)) {
+                toRemove.add(snake.getUsername());
+                continue;
+            }
+            // Other snakes
+            for (Snake other : players.values()) {
+                if (!other.getUsername().equals(snake.getUsername()) && other.getBody().contains(head)) {
+                    toRemove.add(snake.getUsername());
+                    break;
+                }
+            }
+        }
+        for (String p : toRemove) {
+            players.remove(p);
+        }
     }
 
     private void spawnFoodIfNeeded() {
-        if (foods.size() < MAX_FOOD) {
+        while (foods.size() < MAX_FOOD) {
             spawnFood();
         }
     }
 
     private void spawnFood() {
-        // Random empty cell
-        // TODO: Implement
+        Random rand = new Random();
+        Position pos;
+        do {
+            pos = new Position(rand.nextInt(GRID_WIDTH), rand.nextInt(GRID_HEIGHT));
+        } while (players.values().stream().anyMatch(s -> s.getBody().contains(pos)) || foods.stream().anyMatch(f -> f.getPosition().equals(pos)));
+        foods.add(new Food(pos));
     }
 
-    public void applyInput(String player, Direction direction, long tick) {
+    public void applyInput(String player, InputAction action, long tick) {
         if (players.containsKey(player)) {
-            players.get(player).setDirection(direction);
+            Direction dir = switch (action) {
+                case UP -> Direction.UP;
+                case DOWN -> Direction.DOWN;
+                case LEFT -> Direction.LEFT;
+                case RIGHT -> Direction.RIGHT;
+            };
+            players.get(player).setDirection(dir);
         }
     }
 
     private MatchResult computeResult() {
-        // TODO: Implement
+        if (players.size() <= 1) {
+            MatchResult result = new MatchResult();
+            result.scores = new HashMap<>();
+            for (Snake s : players.values()) {
+                result.scores.put(s.getUsername(), s.getBody().size());
+            }
+            if (!players.isEmpty()) {
+                result.winner = players.keySet().iterator().next();
+            }
+            return result;
+        }
         return null;
     }
 }
