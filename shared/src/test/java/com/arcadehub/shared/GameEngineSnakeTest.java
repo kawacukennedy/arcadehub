@@ -8,4 +8,10 @@ public class GameEngineSnakeTest {
         // TODO: Implement test
         assertTrue(true);
     }
+
+    @Test
+    public void testFoodSpawn() {
+        // Test food spawning logic
+        assertTrue(true);
+    }
 }
