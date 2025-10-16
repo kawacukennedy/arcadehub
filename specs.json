@@ -1,0 +1,460 @@
+{
+  "project": {
+    "name": "ArcadeHub",
+    "tagline": "Play. Compete. Connect.",
+    "version": "1.0.0",
+    "description": "Cross-platform desktop multiplayer arcade written entirely in Java (no native code, no logos). Real-time games (Snake, Pong), lobby matchmaking, chat, leaderboards (ELO), anti-cheat, recordings/replays, spectator mode, admin dashboard, CI/CD, and native installers for Windows/macOS/Linux. This JSON exhaustively specifies every feature, module, class, API, DB schema, packet, UI element, asset, build step, tests, deployment, and ops concerns so a developer or AI can implement the whole app in Java with zero ambiguity."
+  },
+  "high_level_requirements": {
+    "language": "Java 17+ (entire codebase; client + server + shared)",
+    "architecture": "Modular multi-project Gradle (client, server, shared), authoritative server model, client-side rendering and prediction, server authoritative game logic",
+    "platforms": ["Windows 10+ (x64)", "macOS 12+ (Intel + Apple Silicon via bundled JRE)", "Linux (Debian/Ubuntu 20.04+)"],
+    "user_targets": ["students", "teachers", "recruiters", "fellow players"],
+    "primary_goals": [
+      "Full Java implementation (no Kotlin/Scala/JS backend)",
+      "Cross-platform native installers with bundled JRE",
+      "Polished UI/UX (neon retro) without a logo asset",
+      "Exhaustive feature set for demo, interviews, and production readiness"
+    ]
+  },
+  "tech_stack": {
+    "build": "Gradle (Kotlin DSL) multi-project",
+    "client_ui": "LibGDX (rendering) + JavaFX for menus and dialogs (Java-only stack)",
+    "networking": "Netty 4.x (TCP) for gameplay + WebSocket fallback (pure Java implementation)",
+    "serialization": "Jackson JSON for MVP; easily swappable to Protobuf later (spec included)",
+    "persistence": "PostgreSQL (production) and SQLite (dev)",
+    "orm": "Hibernate 6 (Java), plain JDBC available for critical queries",
+    "containerization": "Docker for server images",
+    "ci_cd": "GitHub Actions pipeline (build/test/package/publish)",
+    "packaging": "jpackage for native installers (.exe, .dmg, .deb/.AppImage) with bundled JRE",
+    "logging": "SLF4J + Logback (structured JSON logs optional)",
+    "testing": "JUnit 5, Mockito, Testcontainers for integration tests",
+    "monitoring": "Prometheus metrics exporter + optional Grafana dashboard (Java client lib)",
+    "documentation": "Asciidoctor or Markdown docs in /docs"
+  },
+  "deliverables": [
+    "Gradle multi-project repo: /client, /server, /shared, /scripts, /docs",
+    "Fully implemented Java client app (UI, renderer, network, audio, settings)",
+    "Fully implemented Java server (Netty, matchmaker, authoritative game engines, DB, admin API)",
+    "Shared Java module with models, packets, protocol, util classes",
+    "Native installers for Windows/macOS/Linux (no logo included anywhere)",
+    "Docker image for server",
+    "CI pipeline for build/test/package",
+    "Comprehensive unit, integration, and UI test suite",
+    "Developer & user documentation and demo script"
+  ],
+  "exhaustive_feature_list": {
+    "core_gameplay_features": {
+      "games_supported": ["Snake (multiplayer 2-4)", "Pong (2-player)", "Tetris (optional stretch)"],
+      "game_modes": ["Quick Match", "Private Room", "Tournament (automatic bracket)", "Practice vs AI Bot"],
+      "gameplay_rules": {
+        "snake": {
+          "grid": {"width": 30, "height": 30},
+          "tick": {"server": 20, "client_render": 60},
+          "movement": "1 cell per server tick",
+          "food": "max 6 food items, spawn algorithm uniform random empty cell, respawn interval 50 ticks",
+          "collisions": "death on wall/self/other (configurable arena-wrap flag)",
+          "scoring": {"food": 1, "last_survivor_bonus": 5}
+        },
+        "pong": {
+          "arena_px": {"width": 1280, "height": 720},
+          "physics": "simple 2D reflection; server authoritative",
+          "ball": {"speed_px_s_initial": 300, "size_px": 16, "speed_increase_factor": 1.1, "increase_every_bounces": 5},
+          "paddle": {"width_px": 24, "height_px": 128, "max_speed_px_s": 400},
+          "scoring": {"points_to_win": 10}
+        }
+      },
+      "server_authority": "Server runs authoritative tick loop per match; clients send input intents only; server validates and broadcasts snapshots"
+    },
+    "networking_features": {
+      "transport": ["TCP via Netty (primary)", "WebSocket fallback (same JSON payloads)"],
+      "ports": {"game": 5050, "chat": 5051, "admin_api": 8080},
+      "protocol": "JSON messages with envelope {type, payload}. Packet schema types enumerated below",
+      "snapshot_strategy": "Delta snapshots with full snapshot every N ticks (configurable), sequence numbers and tick ids",
+      "latency_comp": ["client-side prediction for local player", "interpolation for remote entities", "reconciliation smoothing (3 frames)"],
+      "heartbeat": {"interval_ms": 5000, "timeout_ms": 20000, "reconnect_strategy": "exponential backoff 1s->2s->4s->...->32s"}
+    },
+    "lobby_and_matchmaking": {
+      "public_private_rooms": true,
+      "room_settings": {"game_type", "max_players", "map_variant", "time_limit", "private_code"},
+      "quick_match": "Queue-based matching (FIFO) with skill-aware ELO pairing (optional)",
+      "ready_system": "Players toggle ready; host or auto-start when full",
+      "spectator": "Allow viewers in rooms with view-only websocket to receive STATE_UPDATE without INPUT permission",
+      "auto_cleanup": "Inactive rooms cleaned after 5 minutes; persistent rooms optional"
+    },
+    "social_features": {
+      "chat": {"lobby_chat", "in-game_chat", "global_announcements"},
+      "friend_system": "Local friends list (MVP: client-side only) with invites",
+      "player_profiles": {"username", "bio", "stats", "achievements"},
+      "emotes_and_reactions": "Text-based emotes and small sound cues (no paid features)"
+    },
+    "persistence_features": {
+      "leaderboard": {
+        "model": {"username", "elo", "wins", "losses", "games_played", "highest_score", "last_active"},
+        "ranking": "ELO default 1000, K = 32",
+        "queries": {"top_n", "user_stats", "history (matches)"}
+      },
+      "match_history": "Store match metadata and minimal replay data (tick logs) optionally compressed",
+      "user_store": "Simple players table; optional password+bcrypt for advanced auth",
+      "cheat_logs": "Store per-player violations with details (timestamp, type, evidence)"
+    },
+    "admin_and_ops": {
+      "admin_api": {
+        "endpoints": [
+          "GET /admin/metrics",
+          "GET /admin/lobbies",
+          "POST /admin/ban {username}",
+          "POST /admin/unban {username}",
+          "GET /admin/health"
+        ],
+        "auth": "Admin token via environment variable (simple) or JWT (advanced)"
+      },
+      "monitoring": {
+        "metrics": "Prometheus Java client export: active_matches, players_online, ticks_processed, avg_latency_ms",
+        "logs": "Structured logs (JSON) with levels and request ids",
+        "alerts": "CPU/memory high, DB unreachable, number of exceptions > threshold"
+      },
+      "backup": "Nightly DB dump (Postgres) and optional replay archival"
+    },
+    "usability_features": {
+      "settings": {"music_volume", "sfx_volume", "graphics_quality", "keybindings", "language"},
+      "accessibility": {"high_contrast_mode", "keyboard_navigation", "font_scaling"},
+      "localization": "i18n-ready strings (en default), design for pluggable resource bundles",
+      "offline_mode": "Local single-player practice vs AI (no network)"
+    },
+    "security_and_privacy": {
+      "data_protection": "No tracking pixels, minimal telemetry opting-in, store only username and stats unless user opts in",
+      "transport_security": "Optional TLS for admin/http endpoints; gameplay TCP may be plain in MVP with future TLS support",
+      "sanitization": "Server sanitizes chat (regex profanity list), rate-limits messages",
+      "anti_cheat": {
+        "server_validations": [
+          "Reject impossible moves (teleport > max distance per tick)",
+          "Reject repeated identical conflicting inputs",
+          "Rate-limit inputs",
+          "Detect tick drift > 200ms"
+        ],
+        "violation_policy": {
+          "first_2": "log and warn",
+          "3rd": "kick for 300s",
+          "repeat": "flag for admin/manual review"
+        }
+      }
+    },
+    "quality_and_testing": {
+      "unit_tests": ["game logic boundaries, collision detection, ELO math, DB queries"],
+      "integration_tests": ["client-server handshake, lobby flows, match flows"],
+      "e2e_tests": ["spawn server container, spin 2 headless clients, play match via scripted inputs"],
+      "code_coverage_target": ">=80%",
+      "static_analysis": "SpotBugs + Checkstyle rules in Gradle"
+    },
+    "dx_and_documentation": {
+      "docs": ["README.md", "INSTALLATION.md", "DEVELOPER_GUIDE.md", "API_DOCS.md", "OPERATION_GUIDE.md"],
+      "demo_script": "Step-by-step for local demo (run server, run two clients, create room, play, show leaderboard)"
+    }
+  },
+  "detailed_modules_and_classes": {
+    "modules": {
+      "shared": {
+        "package_root": "com.arcadehub.shared",
+        "purpose": "Shared POJOs, enums, packet definitions, util functions",
+        "classes": {
+          "Packet": {
+            "package": "com.arcadehub.shared.net",
+            "visibility": "public",
+            "fields": [
+              {"name": "type", "type": "PacketType", "access": "public"},
+              {"name": "payload", "type": "Map<String,Object>", "access": "public"}
+            ],
+            "methods": [
+              {"signature": "byte[] toBytes() throws JsonProcessingException", "description": "Jackson serialization"},
+              {"signature": "static Packet fromBytes(byte[] b) throws IOException", "description": "Jackson deserialization"}
+            ],
+            "notes": "Envelope pattern. All packets include monotonic client sequence when applicable."
+          },
+          "PacketType": {
+            "type": "enum",
+            "values": [
+              "JOIN_REQUEST", "JOIN_RESPONSE", "LEAVE", "INPUT", "STATE_UPDATE", "CHAT", "HEARTBEAT", "MATCH_RESULT", "ERROR", "ADMIN_CMD"
+            ]
+          },
+          "GameState": {
+            "package": "com.arcadehub.shared.model",
+            "fields": [
+              {"name": "tickId", "type": "long", "access": "public"},
+              {"name": "gameType", "type": "GameType", "access": "public"},
+              {"name": "payload", "type": "Map<String,Object>", "access": "public"}
+            ],
+            "methods": ["deepCopy()", "toCompactJson()"]
+          },
+          "GameType": {"type": "enum", "values": ["SNAKE","PONG"]}
+        }
+      },
+      "server": {
+        "package_root": "com.arcadehub.server",
+        "purpose": "Authoritative game server",
+        "top_level_classes": {
+          "ServerMain": {
+            "package": "com.arcadehub.server",
+            "responsibility": "Bootstrap DB pool, Netty server, admin API, scheduled tasks",
+            "entry": "public static void main(String[] args)",
+            "config": "Read from environment or config file: DB_URL, DB_USER, DB_PASS, SERVER_PORTS, ADMIN_TOKEN"
+          },
+          "NettyServer": {
+            "package": "com.arcadehub.server.net",
+            "fields": ["bossGroup", "workerGroup", "ChannelFuture gameChannel", "ChannelFuture chatChannel"],
+            "methods": ["start()", "stop()"],
+            "notes": "Pipeline includes length-field frame decoder, JSON codec, ServerHandler"
+          },
+          "LobbyManager": {
+            "package": "com.arcadehub.server.lobby",
+            "fields": ["ConcurrentHashMap<UUID, Lobby> lobbies"],
+            "methods": ["createLobby(host, settings)", "joinLobby(lobbyId, player)", "leaveLobby(lobbyId, player)", "getLobbyState(lobbyId)"],
+            "threading": "ConcurrentHashMap + synchronized where needed"
+          },
+          "GameEngineSnake": {
+            "package": "com.arcadehub.server.game",
+            "fields": [
+              "Map<String, SnakeState> players",
+              "Set<Food> foods",
+              "boolean running",
+              "long tickId"
+            ],
+            "methods": [
+              "public void start()",
+              "private void tick()", 
+              "private void applyInput(String player, InputAction action, long tick)",
+              "private MatchResult computeResult()"
+            ],
+            "tick_rate_ms": 50,
+            "notes": "tick() computes next positions, collisions, spawns food, persists events minimally"
+          },
+          "GameEnginePong": {
+            "package": "com.arcadehub.server.game",
+            "fields": ["BallState ball", "Map<String,PaddleState> paddles", "Scores scores"],
+            "methods": ["start()", "tick()", "applyInput(...)"],
+            "notes": "server physics simple deterministic; avoid floats drift by using fixed-point or consistent rounding"
+          },
+          "MatchmakerService": {
+            "package": "com.arcadehub.server.matchmaking",
+            "methods": ["enqueueQuickMatch(player, gameType)", "dequeueMatchAndStartIfPossible()"],
+            "notes": "optional ELO-aware matching"
+          },
+          "LeaderboardService": {
+            "package": "com.arcadehub.server.db",
+            "methods": ["updateMatchResult(MatchResult)", "getTopN(int n)"],
+            "transactions": "use DB transactions for consistency"
+          },
+          "AdminApi": {
+            "package": "com.arcadehub.server.admin",
+            "endpoints": ["/admin/metrics","/admin/lobbies","/admin/ban","/admin/unban"],
+            "security": "Admin token header X-ADMIN-TOKEN"
+          }
+        }
+      },
+      "client": {
+        "package_root": "com.arcadehub.client",
+        "purpose": "Desktop application (UI + renderer + network client)",
+        "top_level_classes": {
+          "MainApp": {
+            "package": "com.arcadehub.client",
+            "extends": "javafx.application.Application",
+            "responsibility": "Start JavaFX and LibGDX subsystems (use LibGDX Lwjgl3 backend for desktop), initialize UIManager and NetworkClient"
+          },
+          "UIManager": {
+            "package": "com.arcadehub.client.ui",
+            "responsibility": "JavaFX-based screens: MainMenu, Settings, LobbyList, LobbyScreen, GameScreen, Leaderboard. All fonts, colors, button sizes defined below.",
+            "methods": ["showMainMenu()", "showLobbyList()", "showLobby(UUID)", "showGame(GameState)"]
+          },
+          "GameRenderer": {
+            "package": "com.arcadehub.client.game",
+            "responsibility": "LibGDX rendering loop (60 FPS), receives GameState snapshots and interpolates, supports particle effects and sound hooks",
+            "methods": ["render(float delta)","applySnapshot(GameState s)","predictLocal(InputAction a)"]
+          },
+          "NetworkClient": {
+            "package": "com.arcadehub.client.net",
+            "fields": ["Channel channel", "String serverHost", "int serverPort", "AtomicLong serverTick"],
+            "methods": ["connect()", "sendPacket(Packet p)", "onPacket(Packet p)"],
+            "reconnect": "exponential backoff, preserve session username unless explicitly logged out"
+          },
+          "InputHandler": {
+            "package": "com.arcadehub.client.input",
+            "responsibility": "Map keys -> InputAction; throttle/serialize to avoid client flooding; include tick number; attach local predicted state"
+          },
+          "SettingsManager": {
+            "package": "com.arcadehub.client.settings",
+            "responsibility": "persist user settings to local file (JSON) using Java Preferences or file in user home"
+          }
+        }
+      }
+    }
+  },
+  "packet_specification_examples": {
+    "JOIN_REQUEST": {
+      "schema": {"type":"object","properties":{"type":{"const":"JOIN_REQUEST"},"username":{"type":"string"},"gameType":{"type":"string"},"lobbyId":{"type":["string","null"]}},"required":["type","username","gameType"]},
+      "example": "{\"type\":\"JOIN_REQUEST\",\"username\":\"alice\",\"gameType\":\"SNAKE\",\"lobbyId\":null}"
+    },
+    "INPUT": {
+      "schema": {"type":"object","properties":{"type":{"const":"INPUT"},"player":{"type":"string"},"action":{"type":"string"},"tick":{"type":"integer"}},"required":["type","player","action","tick"]},
+      "example": "{\"type\":\"INPUT\",\"player\":\"alice\",\"action\":\"UP\",\"tick\":1234}"
+    },
+    "STATE_UPDATE": {
+      "schema": {"type":"object","properties":{"type":{"const":"STATE_UPDATE"},"tick":{"type":"integer"},"game":{"type":"string"},"state":{"type":"object"}},"required":["type","tick","game","state"]},
+      "example": "{\"type\":\"STATE_UPDATE\",\"tick\":1235,\"game\":\"SNAKE\",\"state\":{\"snakes\":[{\"player\":\"alice\",\"positions\":[[3,4],[3,5]]}],\"food\":[[7,7]]}}"
+    },
+    "CHAT": {
+      "schema": {"type":"object","properties":{"type":{"const":"CHAT"},"player":{"type":"string"},"message":{"type":"string"}},"required":["type","player","message"]},
+      "example": "{\"type\":\"CHAT\",\"player\":\"bob\",\"message\":\"glhf\"}"
+    }
+  },
+  "database_schema": {
+    "players": {
+      "DDL": "CREATE TABLE players (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), username VARCHAR(32) UNIQUE NOT NULL, elo INT NOT NULL DEFAULT 1000, wins INT NOT NULL DEFAULT 0, losses INT NOT NULL DEFAULT 0, games_played INT NOT NULL DEFAULT 0, highest_score INT NOT NULL DEFAULT 0, created_at TIMESTAMP WITH TIME ZONE DEFAULT now()); CREATE INDEX idx_players_elo ON players (elo DESC);",
+      "sample_queries": {
+        "select_top10": "SELECT username, elo, wins, losses FROM players ORDER BY elo DESC LIMIT 10;",
+        "upsert_player": "INSERT INTO players (username) VALUES (?) ON CONFLICT (username) DO NOTHING;"
+      }
+    },
+    "lobbies": {
+      "DDL": "CREATE TABLE lobbies (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), name VARCHAR(64), host_username VARCHAR(32), game_type VARCHAR(16), status VARCHAR(16) DEFAULT 'WAITING', created_at TIMESTAMP WITH TIME ZONE DEFAULT now());"
+    },
+    "matches": {
+      "DDL": "CREATE TABLE matches (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), game_type VARCHAR(16), start_time TIMESTAMP, end_time TIMESTAMP, result JSONB);"
+    },
+    "cheat_logs": {
+      "DDL": "CREATE TABLE cheat_logs (id UUID PRIMARY KEY DEFAULT gen_random_uuid(), username VARCHAR(32), violation VARCHAR(128), details TEXT, timestamp TIMESTAMP WITH TIME ZONE DEFAULT now());"
+    }
+  },
+  "ui_spec_details": {
+    "theme": {
+      "name": "retro_neon",
+      "colors": {"background":"#0D0D0D","primary":"#00FF7F","secondary":"#FFD700","accent":"#00AFFF","text":"#FFFFFF"},
+      "font": {"file":"assets/fonts/arcade.ttf","default_size":16}
+    },
+    "screen_layouts": {
+      "main_menu": {
+        "canvas_size_px":[1280,720],
+        "title": {"text":"ArcadeHub","font_size":40,"position":[640,120],"align":"center"},
+        "buttons": [
+          {"id":"btn_play","text":"Play","position":[540,240],"size":[200,56],"hover_effect":"glow","sound":"menu_click.wav"},
+          {"id":"btn_leaderboard","text":"Leaderboard","position":[540,320],"size":[200,56]},
+          {"id":"btn_settings","text":"Settings","position":[540,400],"size":[200,56]},
+          {"id":"btn_exit","text":"Exit","position":[540,480],"size":[200,56]}
+        ]
+      },
+      "lobby_screen": {
+        "layout":"two_column",
+        "left_panel":{"width":720,"content":["room_title","player_list (with ready toggles)","start_button (host only)"]},
+        "right_panel":{"width":560,"content":["chat_box (scrollable)","settings panel small"]}
+      },
+      "game_screen": {
+        "hud": {"scoreboard_position":[10,10],"timer_position":[1160,10],"chat_overlay":[900,520]},
+        "render_area":"center",
+        "particle_effects":"on_death_and_score"
+      }
+    },
+    "animations": {
+      "button_hover": {"type":"glow","duration_ms":200,"easing":"easeOutQuad"},
+      "screen_transition": {"type":"fade_slide","duration_ms":400,"easing":"easeInOutQuad"},
+      "snake_death_particles": {"particles":20,"lifespan_ms":1500,"velocity_randomness":0.4}
+    },
+    "sounds": {
+      "sfx": [
+        {"id":"sfx_eat","file":"assets/sounds/eat.wav","volume":0.9},
+        {"id":"sfx_death","file":"assets/sounds/collision.wav","volume":1.0},
+        {"id":"sfx_bounce","file":"assets/sounds/paddle_hit.wav","volume":0.8},
+        {"id":"sfx_menu_click","file":"assets/sounds/menu_click.wav"}
+      ],
+      "music": [{"id":"bg_music","file":"assets/sounds/background.mp3","loop":true,"default_volume":0.4}]
+    },
+    "accessibility": {
+      "keyboard_navigation": true,
+      "high_contrast_mode": {"background":"#000000","primary":"#FFFF00","text":"#FFFFFF"},
+      "font_scaling": {"min":12,"max":36,"default":16}
+    }
+  },
+  "build_and_packaging": {
+    "gradle_structure": {
+      "root": "settings.gradle.kts includes ':client', ':server', ':shared'",
+      "client_build": "apply plugin: 'application' ; mainClass = 'com.arcadehub.client.MainApp' ; dependencies include libgdx, openjfx, netty, jackson",
+      "server_build": "dependencies include netty, hibernate, hikari, postgresql, jackson"
+    },
+    "native_installer_notes": {
+      "windows": "jpackage produce .exe; include bundled JRE, create Start Menu and Desktop shortcuts, request elevation for install if needed",
+      "macos": "jpackage produce .dmg; sign and notarize the app with Apple Developer ID (scripted in CI if creds provided)",
+      "linux": "jpackage produce .deb; optionally produce AppImage for wide compatibility"
+    },
+    "docker": {
+      "server_dockerfile": "FROM eclipse-temurin:17-jre-alpine\nWORKDIR /app\nCOPY server-all.jar ./server-all.jar\nEXPOSE 5050 5051 8080\nENTRYPOINT [\"java\",\"-Xmx512m\",\"-jar\",\"/app/server-all.jar\"]"
+    },
+    "release_steps": [
+      "CI builds fat jars (client-all.jar, server-all.jar)",
+      "CI runs tests and creates artifacts",
+      "Build and test Docker image for server, push to registry",
+      "Run jpackage on CI matrix (windows/macos/linux runners) to build native installers",
+      "Upload installers to GitHub Releases",
+      "Tag release in git"
+    ]
+  },
+  "testing_spec": {
+    "unit_tests": [
+      {"target":"ELOCalculator","cases":["win_vs_lower","loss_vs_higher","draws"]},
+      {"target":"SnakeEngine","cases":["food_spawn","self_collision","wall_collision","multiplayer_interaction"]},
+      {"target":"PongEngine","cases":["ball_reflect","paddle_hit","score_detect"]}
+    ],
+    "integration_tests": [
+      {"name":"ClientServerHandshakeTest","sequence":["start server container","connect headless client","expect JOIN_RESPONSE OK"]},
+      {"name":"LobbyRoundTripTest","sequence":["create lobby","join players","start match","assert state updates sent"]}
+    ],
+    "e2e_tests": [
+      {"name":"FullMatchSim","description":"Scripted clients simulate a 2-player match and verify leaderboard changes and match record persisted"}
+    ],
+    "test_tools": ["JUnit 5","Testcontainers (Postgres integration)","AssertJ"]
+  },
+  "admin_and_ops_details": {
+    "metrics": {
+      "exporter": "Micrometer/Prometheus Java client",
+      "metrics_collected": ["jvm_memory_bytes","active_players","active_matches","avg_tick_duration_ms","avg_network_latency_ms","packets_per_second"]
+    },
+    "logs": {
+      "format": "JSON lines (timestamp, level, logger, thread, message, context)",
+      "example": "{\"ts\":\"2025-10-16T12:00:00Z\",\"level\":\"INFO\",\"logger\":\"com.arcadehub.server.GameEngineSnake\",\"msg\":\"tick processed\",\"tick\":1234,\"duration_ms\":2}"
+    },
+    "health_checks": [
+      {"path":"/health","returns":"200 OK when server alive"},
+      {"path":"/metrics","returns":"Prometheus metrics"}
+    ]
+  },
+  "extensibility_points": {
+    "add_game": "Implement GameEngineX extends AbstractGameEngine with tick(), applyInput(), serializeState(). Register in GameFactory.",
+    "add_payment": "Not included in MVP; architecture supports adding purchases server-side and client storefront UI.",
+    "add_auth": "Swap username-only auth to full auth with bcrypt passwords and JWT; hooks exist in AuthService interface."
+  },
+  "security_and_hardening": {
+    "secrets_management": "CI injects DB and admin tokens via environment variables; do not commit secrets",
+    "rate_limits": {"chat": "1 msg/sec", "inputs": "20 inputs/sec"},
+    "input_validation": "All client packets validated against JSON schema server-side",
+    "sql_injection_protection": "Use prepared statements via Hibernate/JDBC; no string concatenation of user input"
+  },
+  "delivery_options_for_codegen": {
+    "scaffold": {
+      "generate": "file tree with all directories and skeleton java classes (fields + method stubs + TODO comments) for client, server, shared",
+      "include_files": [
+        "settings.gradle.kts",
+        "client/build.gradle.kts",
+        "server/build.gradle.kts",
+        "shared/build.gradle.kts",
+        "README.md (run + build instructions)",
+        "sql/ddl/*.sql",
+        "docker/server/Dockerfile",
+        ".github/workflows/ci.yml",
+        "assets placeholders (images,sounds,fonts) - NO LOGO FILE",
+        "example unit test skeletons"
+      ]
+    },
+    "scaffold_policy": "All generated source must be Java; any build scripts in Kotlin DSL are allowed for Gradle only"
+  },
+  "final_notes": {
+    "no_logo_confirmed": true,
+    "scope_comment": "This JSON is intended as a complete implementation specification and exhaustive feature checklist. Use it to generate a starter scaffold, fully implemented code, or to hand to engineers. If you want, I will now: (A) output the full project scaffold (folders + Java skeleton files + Gradle files) as a ZIP-like listing in this chat, or (B) produce one complete module implementation (for example the authoritative Snake server engine) in Java source code. Pick A or B or request a different immediate artifact."
+  }
+}
