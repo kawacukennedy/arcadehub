@@ -1,0 +1,21 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: arcadehub
+      POSTGRES_USER: arcade
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+  server:
+    build: ./server
+    ports:
+      - "5050:5050"
+      - "8081:8081"
+    depends_on:
+      - db
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/arcadehub
+      DB_USER: arcade
+      DB_PASS: password

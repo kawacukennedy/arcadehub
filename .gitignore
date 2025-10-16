@@ -1,0 +1,15 @@
+# Gradle
+.gradle/
+/build/
+
+# IntelliJ IDEA
+.idea/
+
+# macOS
+.DS_Store
+
+# Local database files
+*.db
+
+# Client build install directory
+client/build/install/

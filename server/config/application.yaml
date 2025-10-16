@@ -1,0 +1,26 @@
+ports:
+  game_tcp: 5050
+  chat_tcp: 5051
+  admin_http: 8081
+
+tls:
+  enabled: true
+  cert_path: "/etc/arcadehub/certs/cert.pem"
+  key_path: "/etc/arcadehub/certs/key.pem"
+
+db:
+  url: "jdbc:postgresql://db:5432/arcadehub"
+  user: "arcade"
+  max_pool: 10
+
+logging:
+  level: "INFO"
+  format: "json"
+
+metrics:
+  prometheus_enabled: true
+  endpoint: "/metrics"
+
+replay_store:
+  path: "/var/lib/arcadehub/replays"
+  retention_days_default: 14

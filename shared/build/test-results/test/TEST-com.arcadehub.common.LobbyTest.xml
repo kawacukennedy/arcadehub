@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.arcadehub.common.LobbyTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2025-10-02T13:18:53.061Z" hostname="n3ons-MacBook-Pro.local" time="0.065">
+  <properties/>
+  <testcase name="testRemovePlayer()" classname="com.arcadehub.common.LobbyTest" time="0.012"/>
+  <testcase name="testGameStartedPreventsAddingPlayers()" classname="com.arcadehub.common.LobbyTest" time="0.019"/>
+  <testcase name="testAddPlayer()" classname="com.arcadehub.common.LobbyTest" time="0.013"/>
+  <testcase name="testLobbyConstructorAndGetters()" classname="com.arcadehub.common.LobbyTest" time="0.006"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
