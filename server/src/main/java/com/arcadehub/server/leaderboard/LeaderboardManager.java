@@ -1,6 +1,7 @@
 package com.arcadehub.server.leaderboard;
 
 import com.arcadehub.server.entity.PlayerEntity;
+import com.arcadehub.shared.MatchResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,27 +35,36 @@ public class LeaderboardManager {
         }
     }
 
-    public void updatePlayerStats(String username, int eloChange, boolean won) {
+    public void updateMatchResult(MatchResult result) {
         EntityManager em = emf.createEntityManager();
         em.getTransaction().begin();
         try {
-            PlayerEntity player = em.createQuery("SELECT p FROM PlayerEntity p WHERE p.username = :username", PlayerEntity.class)
-                                    .setParameter("username", username)
-                                    .getSingleResult();
-            player.setElo(player.getElo() + eloChange);
-            if (won) {
-                player.setWins(player.getWins() + 1);
-            } else {
-                player.setLosses(player.getLosses() + 1);
+            for (String username : result.scores.keySet()) {
+                PlayerEntity player = em.createQuery("SELECT p FROM PlayerEntity p WHERE p.username = :username", PlayerEntity.class)
+                                        .setParameter("username", username)
+                                        .getSingleResult();
+                int score = result.scores.get(username);
+                player.setGamesPlayed(player.getGamesPlayed() + 1);
+                if (score > player.getHighestScore()) {
+                    player.setHighestScore(score);
+                }
+                if (result.winner != null && result.winner.equals(username)) {
+                    player.setWins(player.getWins() + 1);
+                    // Simple ELO: winner +10, others -10
+                    player.setElo(player.getElo() + 10);
+                } else {
+                    player.setLosses(player.getLosses() + 1);
+                    player.setElo(player.getElo() - 10);
+                }
+                em.merge(player);
             }
-            em.merge(player);
             em.getTransaction().commit();
-            logger.info("Updated stats for player {}: ELO={}, Wins={}, Losses={}", username, player.getElo(), player.getWins(), player.getLosses());
+            logger.info("Updated match result: winner={}, scores={}", result.winner, result.scores);
         } catch (Exception e) {
             if (em.getTransaction().isActive()) {
                 em.getTransaction().rollback();
             }
-            logger.error("Failed to update player stats for {}: {}", username, e.getMessage(), e);
+            logger.error("Failed to update match result: {}", e.getMessage(), e);
         } finally {
             em.close();
         }

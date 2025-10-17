@@ -6,6 +6,7 @@ CREATE TABLE players (
     losses INT NOT NULL DEFAULT 0,
     games_played INT NOT NULL DEFAULT 0,
     highest_score INT NOT NULL DEFAULT 0,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    last_login TIMESTAMP WITH TIME ZONE
 );
 CREATE INDEX idx_players_elo ON players (elo DESC);

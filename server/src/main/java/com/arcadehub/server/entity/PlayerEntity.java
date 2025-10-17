@@ -29,6 +29,12 @@ public class PlayerEntity {
     @Column(nullable = false)
     private int losses = 0;
 
+    @Column(name = "games_played", nullable = false)
+    private int gamesPlayed = 0;
+
+    @Column(name = "highest_score", nullable = false)
+    private int highestScore = 0;
+
     // Constructors
     public PlayerEntity() {
     }
@@ -81,6 +87,12 @@ public class PlayerEntity {
 
     public int getLosses() { return losses; }
     public void setLosses(int losses) { this.losses = losses; }
+
+    public int getGamesPlayed() { return gamesPlayed; }
+    public void setGamesPlayed(int gamesPlayed) { this.gamesPlayed = gamesPlayed; }
+
+    public int getHighestScore() { return highestScore; }
+    public void setHighestScore(int highestScore) { this.highestScore = highestScore; }
 
     @PrePersist
     protected void onCreate() {
