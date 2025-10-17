@@ -8,6 +8,7 @@ public class Snake implements Serializable {
     private String username;
     private List<Position> body;
     private Direction direction;
+    private int score;
 
     public Snake() {
         // Default constructor for serialization
@@ -17,6 +18,7 @@ public class Snake implements Serializable {
         this.username = username;
         this.body = body;
         this.direction = direction;
+        this.score = 0;
     }
 
     public String getUsername() {
@@ -45,5 +47,13 @@ public class Snake implements Serializable {
 
     public void setDirection(Direction direction) {
         this.direction = direction;
+    }
+
+    public int getScore() {
+        return score;
+    }
+
+    public void setScore(int score) {
+        this.score = score;
     }
 }
