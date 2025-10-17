@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import com.arcadehub.server.lobby.LobbyManager;
 import com.arcadehub.server.game.GameLoopManager;
 import com.arcadehub.server.leaderboard.LeaderboardManager;
+import com.arcadehub.server.game.AntiCheatValidator;
 
 import javax.sql.DataSource;
 import java.util.concurrent.Executors;
@@ -51,10 +52,10 @@ public class ServerMain {
 
         try {
             LobbyManager lobbyManager = new LobbyManager();
-            GameLoopManager gameLoopManager = new GameLoopManager();
             LeaderboardManager leaderboardManager = new LeaderboardManager();
-
-            NettyServer nettyServer = new NettyServer(bossGroup, workerGroup, lobbyManager, gameLoopManager, leaderboardManager);
+            AntiCheatValidator antiCheatValidator = new AntiCheatValidator();
+            GameLoopManager gameLoopManager = new GameLoopManager(leaderboardManager);
+            NettyServer nettyServer = new NettyServer(bossGroup, workerGroup, lobbyManager, gameLoopManager, leaderboardManager, antiCheatValidator);
             nettyServer.start(GAME_PORT, CHAT_PORT);
 
             // Admin API

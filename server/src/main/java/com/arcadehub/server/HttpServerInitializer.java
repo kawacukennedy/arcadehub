@@ -10,6 +10,6 @@ public class HttpServerInitializer extends ChannelInitializer<SocketChannel> {
     protected void initChannel(SocketChannel ch) throws Exception {
         ChannelPipeline pipeline = ch.pipeline();
         pipeline.addLast(new HttpServerCodec());
-        pipeline.addLast(new AdminHandler());
+        // pipeline.addLast(new AdminHandler()); // TODO: fix AdminHandler
     }
 }

@@ -25,13 +25,9 @@ public class ClientGameState {
     public void reconcile(GameState newAuthoritative) {
         authoritativeState = newAuthoritative;
         // Roll back to authoritative state
-        predictedState = new GameState(newAuthoritative.getLobbyId(), newAuthoritative.getTick(),
-                                       new ArrayList<>(newAuthoritative.getSnakes()),
-                                       new ArrayList<>(newAuthoritative.getPaddles()),
-                                       new ArrayList<>(newAuthoritative.getBalls()),
-                                       new HashMap<>(newAuthoritative.getScores()),
-                                       newAuthoritative.getSeed());
-        lastProcessedTick = newAuthoritative.getTick();
+        Map<String, Object> payload = new HashMap<>(newAuthoritative.getPayload());
+        predictedState = new GameState(newAuthoritative.getTickId(), newAuthoritative.getGameType(), payload);
+        lastProcessedTick = (int) newAuthoritative.getTickId();
         // Replay pending inputs
         for (InputEnvelope env : pendingInputs) {
             if (env.getClientTick() > lastProcessedTick) {

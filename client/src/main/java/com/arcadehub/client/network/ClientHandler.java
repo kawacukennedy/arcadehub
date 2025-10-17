@@ -1,11 +1,9 @@
 package com.arcadehub.client.network;
 
-import com.arcadehub.shared.HeartbeatPacket;
-import com.arcadehub.shared.HeartbeatPayload;
-import com.arcadehub.shared.JoinAcceptPacket;
 import com.arcadehub.shared.Packet;
-import com.arcadehub.shared.StateUpdatePacket;
+import com.arcadehub.shared.PacketType;
 import com.arcadehub.shared.NetworkPacket;
+import java.util.Map;
 import com.arcadehub.client.game.GameRenderer;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -37,24 +35,20 @@ public class ClientHandler extends SimpleChannelInboundHandler<NetworkPacket> {
         Object payload = netPacket.getPayload();
         if (payload instanceof Packet) {
             Packet msg = (Packet) payload;
-            if (msg instanceof HeartbeatPacket) {
+            if (msg.type == PacketType.HEARTBEAT) {
                 logger.debug("Received Heartbeat from server.");
-            } else if (msg instanceof JoinAcceptPacket) {
-                JoinAcceptPacket accept = (JoinAcceptPacket) msg;
+            } else if (msg.type == PacketType.JOIN_RESPONSE) {
                 ClientNetworkManager.setSessionToken(netPacket.getSessionId());
                 logger.info("Joined lobby, session: {}", netPacket.getSessionId());
-            } else if (msg instanceof StateUpdatePacket) {
-                StateUpdatePacket statePacket = (StateUpdatePacket) msg;
+            } else if (msg.type == PacketType.STATE_UPDATE) {
                 if (gameRenderer != null) {
-                    gameRenderer.updatePositions(statePacket.getPayload().getState());
+                    // Assume payload has "state" key
+                    gameRenderer.updatePositions((com.arcadehub.shared.GameState) msg.payload.get("state"));
                 }
-            StateUpdatePacket stateUpdate = (StateUpdatePacket) msg;
-            logger.info("Received StateUpdatePacket from server at timestamp: {}", stateUpdate.getTimestamp());
-            // TODO: Update game UI based on stateUpdate
-        } else {
-            logger.info("Received packet from server: {}", msg.getClass().getSimpleName());
-            // TODO: Handle other packet types (ChatPacket, LobbyUpdatePacket, LeaderboardResponsePacket)
-        }
+                logger.info("Received StateUpdate from server");
+            } else {
+                logger.info("Received packet from server: {}", msg.type);
+            }
         } else {
             logger.warn("Unknown payload type: {}", payload.getClass().getName());
         }
@@ -66,8 +60,10 @@ public class ClientHandler extends SimpleChannelInboundHandler<NetworkPacket> {
             IdleStateEvent e = (IdleStateEvent) evt;
             if (e.state() == IdleState.WRITER_IDLE) {
                 // Send heartbeat to server to keep connection alive
-                HeartbeatPayload hbPayload = new HeartbeatPayload(System.currentTimeMillis());
-                ctx.writeAndFlush(new NetworkPacket("HEARTBEAT", 1, null, hbPayload));
+                Packet hbPacket = new Packet();
+                hbPacket.type = PacketType.HEARTBEAT;
+                hbPacket.payload = Map.of("timestamp", System.currentTimeMillis());
+                ctx.writeAndFlush(new NetworkPacket("HEARTBEAT", 1, null, hbPacket));
                 logger.debug("Sending Heartbeat to server.");
             }
         }

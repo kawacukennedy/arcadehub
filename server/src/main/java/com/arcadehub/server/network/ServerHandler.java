@@ -1,20 +1,13 @@
 package com.arcadehub.server.network;
 
-import com.arcadehub.shared.ChatPacket;
-import com.arcadehub.shared.InputPacket;
-import com.arcadehub.shared.JoinLobbyPacket;
-import com.arcadehub.shared.LeaderboardRequestPacket;
-import com.arcadehub.shared.LeaderboardResponsePacket;
-import com.arcadehub.shared.LobbyUpdatePacket;
-import com.arcadehub.shared.Move;
-import com.arcadehub.shared.PaddleMove;
 import com.arcadehub.shared.Packet;
+import com.arcadehub.shared.PacketType;
 import com.arcadehub.shared.Player;
-import com.arcadehub.shared.StateUpdatePacket;
+import com.arcadehub.shared.GameType;
 import com.arcadehub.shared.GameState;
 import com.arcadehub.shared.Lobby;
-import com.arcadehub.shared.GameType;
-import com.arcadehub.server.db.LeaderboardManager;
+import com.arcadehub.server.entity.PlayerEntity;
+import com.arcadehub.server.leaderboard.LeaderboardManager;
 import com.arcadehub.server.game.AntiCheatValidator;
 import com.arcadehub.server.game.GameLoopManager;
 import com.arcadehub.server.lobby.LobbyManager;
@@ -23,11 +16,14 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
-public class ServerHandler extends SimpleChannelInboundHandler<String> {
+public class ServerHandler extends SimpleChannelInboundHandler<Packet> {
 
     private static final java.util.Map<String, Channel> channels = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -56,38 +52,42 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
-        Packet basePacket = objectMapper.readValue(msg, Packet.class);
+    protected void channelRead0(ChannelHandlerContext ctx, Packet packet) throws Exception {
         String username = ctx.channel().attr(ServerInitializer.USERNAME_KEY).get();
         UUID lobbyId = ctx.channel().attr(ServerInitializer.LOBBY_ID_KEY).get();
 
-        switch (basePacket.getClass().getSimpleName()) {
-            case "JoinLobbyPacket":
-                JoinLobbyPacket joinLobbyPacket = (JoinLobbyPacket) basePacket;
+        switch (packet.type) {
+            case JOIN_LOBBY:
+                String joinUsername = (String) packet.payload.get("username");
                 // For simplicity, let's assume a new lobby is always created for now
                 // In a real scenario, you'd check for existing lobbies or allow client to specify
-                lobbyId = lobbyManager.createLobby("Lobby for " + joinLobbyPacket.getUsername(), joinLobbyPacket.getUsername(), GameType.SNAKE); // Default to SNAKE
-                lobbyManager.joinLobby(lobbyId, joinLobbyPacket.getUsername());
-                ctx.channel().attr(ServerInitializer.USERNAME_KEY).set(joinLobbyPacket.getUsername());
+                Lobby lobby = lobbyManager.createLobby("Lobby for " + joinUsername, GameType.SNAKE, 4, joinUsername); // Default to SNAKE
+                lobbyId = lobby.getId();
+                Player player = new Player(UUID.randomUUID(), joinUsername, 1000, 0, 0, Instant.now());
+                lobbyManager.joinLobby(lobbyId, player, ctx);
+                ctx.channel().attr(ServerInitializer.USERNAME_KEY).set(joinUsername);
                 ctx.channel().attr(ServerInitializer.LOBBY_ID_KEY).set(lobbyId);
                 gameLoopManager.startLoop(lobbyId, GameType.SNAKE);
 
                 // Send initial lobby update to the joining client
-                sendPacketToClient(ctx.channel(), new LobbyUpdatePacket(lobbyManager.getLobby(lobbyId)));
+                Packet lobbyUpdatePacket = new Packet();
+                lobbyUpdatePacket.type = PacketType.LOBBY_UPDATE;
+                lobbyUpdatePacket.payload = Map.of("lobby", lobbyManager.getLobbyById(lobbyId));
+                sendPacketToClient(ctx.channel(), lobbyUpdatePacket);
                 break;
-            case "InputPacket":
-                InputPacket inputPacket = (InputPacket) basePacket;
+            case INPUT:
                 if (username != null && lobbyId != null) {
                     GameState gameState = gameLoopManager.getGameState(lobbyId);
                     if (gameState != null) {
+                        long tick = (Long) packet.payload.get("tick");
                         // Validate input with anti-cheat
                         if (gameState.getGameType() == GameType.SNAKE) {
-                            if (antiCheatValidator.validateSnakeMove(username, null, inputPacket.getTick())) {
+                            if (antiCheatValidator.validateSnakeMove(username, null, tick)) {
                                 // Apply snake movement
                                 // This logic would typically be in GameLoopManager.tick()
                             }
                         } else if (gameState.getGameType() == GameType.PONG) {
-                            if (antiCheatValidator.validatePaddleMove(username, null, inputPacket.getTick())) {
+                            if (antiCheatValidator.validatePaddleMove(username, null, tick)) {
                                 // Apply paddle movement
                                 // This logic would typically be in GameLoopManager.tick()
                             }
@@ -95,24 +95,28 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
                     }
                 }
                 break;
-            case "ChatPacket":
-                ChatPacket chatPacket = (ChatPacket) basePacket;
+            case CHAT:
                 if (username != null && lobbyId != null) {
                     // Broadcast chat message to all clients in the lobby
-                    broadcastPacketToLobby(lobbyId, chatPacket);
+                    broadcastPacketToLobby(lobbyId, basePacket);
                 }
                 break;
-            case "HeartbeatPacket":
+            case HEARTBEAT:
                 // Acknowledge heartbeat (no action needed for now, connection is kept alive)
                 break;
-            case "LeaderboardRequestPacket":
-                LeaderboardRequestPacket leaderboardRequestPacket = (LeaderboardRequestPacket) basePacket;
-                List<Player> topPlayers = leaderboardManager.getTopPlayers(leaderboardRequestPacket.getLimit());
-                LeaderboardResponsePacket leaderboardResponsePacket = new LeaderboardResponsePacket(topPlayers);
-                sendPacketToClient(ctx.channel(), leaderboardResponsePacket);
+            case LEADERBOARD_REQUEST:
+                int limit = (Integer) basePacket.payload.get("limit");
+                List<PlayerEntity> topPlayerEntities = leaderboardManager.getTopPlayers(limit);
+                List<Player> topPlayers = topPlayerEntities.stream()
+                        .map(pe -> new Player(pe.getId(), pe.getUsername(), pe.getElo(), pe.getWins(), pe.getLosses(), pe.getLastLogin()))
+                        .collect(Collectors.toList());
+                Packet leaderboardPacket = new Packet();
+                leaderboardPacket.type = PacketType.LEADERBOARD_RESPONSE;
+                leaderboardPacket.payload = Map.of("players", topPlayers);
+                sendPacketToClient(ctx.channel(), leaderboardPacket);
                 break;
             default:
-                System.out.println("Unknown packet type: " + basePacket.getClass().getSimpleName());
+                System.out.println("Unknown packet type: " + basePacket.type);
         }
     }
 
@@ -132,7 +136,7 @@ public class ServerHandler extends SimpleChannelInboundHandler<String> {
     }
 
     private void broadcastPacketToLobby(UUID lobbyId, Packet packet) {
-        lobbyManager.getLobby(lobbyId).getPlayers().forEach(player -> {
+        lobbyManager.getLobbyById(lobbyId).getPlayers().forEach(player -> {
             Channel playerChannel = channels.values().stream()
                     .filter(channel -> player.getUsername().equals(channel.attr(ServerInitializer.USERNAME_KEY).get()))
                     .findFirst()

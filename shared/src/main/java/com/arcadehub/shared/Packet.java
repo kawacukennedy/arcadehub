@@ -15,6 +15,18 @@ public class Packet {
     // Jackson mapper for serialization
     private static final ObjectMapper mapper = new ObjectMapper();
 
+    public String getType() {
+        return type != null ? type.name() : null;
+    }
+
+    public int getVersion() {
+        return 1; // Assume version 1
+    }
+
+    public Object getPayload() {
+        return payload;
+    }
+
     public byte[] toBytes() throws JsonProcessingException {
         return mapper.writeValueAsBytes(this);
     }

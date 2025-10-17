@@ -3,14 +3,15 @@ package com.arcadehub.server;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.handler.codec.serialization.ClassResolvers;
-import io.netty.handler.codec.serialization.ObjectDecoder;
-import io.netty.handler.codec.serialization.ObjectEncoder;
+import com.arcadehub.server.network.JsonDecoder;
+import com.arcadehub.server.network.JsonEncoder;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.handler.ssl.SslContext;
 import com.arcadehub.server.lobby.LobbyManager;
 import com.arcadehub.server.game.GameLoopManager;
 import com.arcadehub.server.leaderboard.LeaderboardManager;
+import com.arcadehub.server.game.AntiCheatValidator;
+import com.arcadehub.server.network.ServerHandler;
 
 import java.util.concurrent.TimeUnit;
 
@@ -23,12 +24,14 @@ public class ServerInitializer extends ChannelInitializer<SocketChannel> {
     private final LobbyManager lobbyManager;
     private final GameLoopManager gameLoopManager;
     private final LeaderboardManager leaderboardManager;
+    private final AntiCheatValidator antiCheatValidator;
 
-    public ServerInitializer(SslContext sslContext, LobbyManager lobbyManager, GameLoopManager gameLoopManager, LeaderboardManager leaderboardManager) {
+    public ServerInitializer(SslContext sslContext, LobbyManager lobbyManager, GameLoopManager gameLoopManager, LeaderboardManager leaderboardManager, AntiCheatValidator antiCheatValidator) {
         this.sslContext = sslContext;
         this.lobbyManager = lobbyManager;
         this.gameLoopManager = gameLoopManager;
         this.leaderboardManager = leaderboardManager;
+        this.antiCheatValidator = antiCheatValidator;
     }
 
     @Override
@@ -42,12 +45,12 @@ public class ServerInitializer extends ChannelInitializer<SocketChannel> {
         pipeline.addLast(new IdleStateHandler(HEARTBEAT_TIMEOUT_MS, HEARTBEAT_INTERVAL_MS, 0, TimeUnit.MILLISECONDS));
 
         // Decoders
-        pipeline.addLast(new ObjectDecoder(ClassResolvers.cacheDisabled(getClass().getClassLoader())));
+        pipeline.addLast(new JsonDecoder());
 
         // Encoders
-        pipeline.addLast(new ObjectEncoder());
+        pipeline.addLast(new JsonEncoder());
 
         // Our custom server handler
-        pipeline.addLast(new ServerHandler(lobbyManager, gameLoopManager, leaderboardManager));
+        pipeline.addLast(new ServerHandler(lobbyManager, gameLoopManager, leaderboardManager, antiCheatValidator));
     }
 }

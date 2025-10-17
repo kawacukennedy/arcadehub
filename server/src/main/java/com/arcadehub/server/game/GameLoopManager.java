@@ -1,7 +1,8 @@
 package com.arcadehub.server.game;
 
 import com.arcadehub.shared.*;
-import io.netty.channel.ChannelHandlerContext;
+import com.arcadehub.server.leaderboard.LeaderboardManager;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Random;
@@ -31,7 +32,7 @@ public class GameLoopManager {
         // Already set in constructor
     }
 
-    public void startLoop(UUID lobbyId) {
+    public void startLoop(UUID lobbyId, GameType gameType) {
         if (activeGameLoops.containsKey(lobbyId)) {
             logger.warn("Game loop for lobby {} already started.", lobbyId);
             return;
@@ -39,7 +40,7 @@ public class GameLoopManager {
 
         ConcurrentLinkedQueue<InputEnvelope> queue = new ConcurrentLinkedQueue<>();
         inputQueues.put(lobbyId, queue);
-        LobbyGameLoop gameLoop = new LobbyGameLoop(lobbyId, queue);
+        LobbyGameLoop gameLoop = new LobbyGameLoop(lobbyId, queue, gameType);
         activeGameLoops.put(lobbyId, gameLoop);
         gameLoop.start();
         logger.info("Started game loop for lobby {}", lobbyId);
@@ -61,6 +62,14 @@ public class GameLoopManager {
         }
     }
 
+    public GameState getGameState(UUID lobbyId) {
+        LobbyGameLoop loop = activeGameLoops.get(lobbyId);
+        if (loop != null) {
+            return loop.getCurrentState();
+        }
+        return null;
+    }
+
     public void shutdown() {
         activeGameLoops.values().forEach(LobbyGameLoop::stop);
         logger.info("GameLoopManager shut down.");
@@ -69,6 +78,7 @@ public class GameLoopManager {
     // Per-lobby game loop
     private static class LobbyGameLoop {
         private final UUID lobbyId;
+        private final GameType gameType;
         private final ScheduledThreadPoolExecutor executor;
         private volatile boolean running = true;
         private int currentTick = 0;
@@ -83,13 +93,20 @@ public class GameLoopManager {
         private boolean matchEnded = false;
         private PrintWriter replayWriter;
 
-        public LobbyGameLoop(UUID lobbyId, ConcurrentLinkedQueue<InputEnvelope> inputQueue) {
+        public LobbyGameLoop(UUID lobbyId, ConcurrentLinkedQueue<InputEnvelope> inputQueue, GameType gameType) {
             this.lobbyId = lobbyId;
+            this.gameType = gameType;
             this.executor = new ScheduledThreadPoolExecutor(1);
             this.inputQueue = inputQueue;
-            // Init game state, e.g., add snake
-            snakes.add(new Snake("alice", List.of(new Position(10, 10)), Direction.RIGHT));
-            spawnFood();
+            // Init game state based on gameType
+            if (gameType == GameType.SNAKE) {
+                snakes.add(new Snake("alice", List.of(new Position(10, 10)), Direction.RIGHT));
+                spawnFood();
+            } else if (gameType == GameType.PONG) {
+                paddles.add(new Paddle(new Position(50, 250), 10f, 100f, "player1"));
+                paddles.add(new Paddle(new Position(750, 250), 10f, 100f, "player2"));
+                balls.add(new Ball(new Position(400, 300), 1, -1, 10));
+            }
             // Init replay
             try {
                 Path replayPath = Paths.get("replays", lobbyId + ".ndjson");
@@ -141,10 +158,13 @@ public class GameLoopManager {
                 }
             }
             // Update game state
-            updateSnakes();
-            updatePong();
+            if (gameType == GameType.SNAKE) {
+                updateSnakes();
+            } else if (gameType == GameType.PONG) {
+                updatePong();
+            }
             // Create state
-            GameState state = new GameState(lobbyId.toString(), currentTick, new ArrayList<>(snakes), new ArrayList<>(paddles), new ArrayList<>(balls), new HashMap<>(scores), seed);
+            GameState state = new GameState(currentTick, gameType, Map.of("snakes", new ArrayList<>(snakes), "paddles", new ArrayList<>(paddles), "balls", new ArrayList<>(balls), "scores", new HashMap<>(scores), "seed", seed));
             // Append to replay
             if (replayWriter != null) {
                 String snapshot = String.format("{\"tag\":\"TICK_SNAPSHOT\",\"tick\":%d,\"state\":%s,\"serverTimestampNs\":%d}", currentTick, state.toString(), System.nanoTime());
@@ -240,7 +260,7 @@ public class GameLoopManager {
 
         private void spawnFood() {
             Random rand = new Random(seed);
-            foods.add(new Food(new Position(rand.nextInt(40), rand.nextInt(30))));
+            foods.add(new Food(new Position(rand.nextInt(40), rand.nextInt(30)), 0));
         }
 
         private void updateElo() {
@@ -271,6 +291,10 @@ public class GameLoopManager {
                     logger.error("Failed to archive replay", e);
                 }
             }
+        }
+
+        public GameState getCurrentState() {
+            return new GameState(currentTick, gameType, Map.of("snakes", new ArrayList<>(snakes), "paddles", new ArrayList<>(paddles), "balls", new ArrayList<>(balls), "scores", new HashMap<>(scores), "seed", seed));
         }
 
         public void stop() {

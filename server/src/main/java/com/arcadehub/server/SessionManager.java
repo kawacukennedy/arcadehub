@@ -1,6 +1,6 @@
 package com.arcadehub.server;
 
-import org.apache.commons.codec.binary.Base64;
+import java.util.Base64;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,7 +20,7 @@ public class SessionManager {
     public String createSession() {
         byte[] key = new byte[32]; // 256 bits
         random.nextBytes(key);
-        String token = Base64.encodeBase64URLSafeString(key); // Use first 32 bytes as token? No, token is base64 of key.
+        String token = Base64.getUrlEncoder().encodeToString(key); // Use first 32 bytes as token? No, token is base64 of key.
         sessionKeys.put(token, key);
         logger.debug("Created session: {}", token);
         return token;
@@ -38,7 +38,7 @@ public class SessionManager {
             SecretKeySpec keySpec = new SecretKeySpec(key, HMAC_ALGO);
             mac.init(keySpec);
             byte[] computed = mac.doFinal(data.getBytes(StandardCharsets.UTF_8));
-            String computedSig = Base64.encodeBase64URLSafeString(computed);
+            String computedSig = Base64.getUrlEncoder().encodeToString(computed);
             return computedSig.equals(signature);
         } catch (Exception e) {
             logger.error("Error verifying signature", e);

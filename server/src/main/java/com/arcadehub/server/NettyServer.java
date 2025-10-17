@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import com.arcadehub.server.lobby.LobbyManager;
 import com.arcadehub.server.game.GameLoopManager;
 import com.arcadehub.server.leaderboard.LeaderboardManager;
+import com.arcadehub.server.game.AntiCheatValidator;
 
 public class NettyServer {
     private static final Logger logger = LoggerFactory.getLogger(NettyServer.class);
@@ -21,13 +22,15 @@ public class NettyServer {
     private final LobbyManager lobbyManager;
     private final GameLoopManager gameLoopManager;
     private final LeaderboardManager leaderboardManager;
+    private final AntiCheatValidator antiCheatValidator;
 
-    public NettyServer(EventLoopGroup bossGroup, EventLoopGroup workerGroup, LobbyManager lobbyManager, GameLoopManager gameLoopManager, LeaderboardManager leaderboardManager) {
+    public NettyServer(EventLoopGroup bossGroup, EventLoopGroup workerGroup, LobbyManager lobbyManager, GameLoopManager gameLoopManager, LeaderboardManager leaderboardManager, AntiCheatValidator antiCheatValidator) {
         this.bossGroup = bossGroup;
         this.workerGroup = workerGroup;
         this.lobbyManager = lobbyManager;
         this.gameLoopManager = gameLoopManager;
         this.leaderboardManager = leaderboardManager;
+        this.antiCheatValidator = antiCheatValidator;
     }
 
     public void start(int gamePort, int chatPort) throws Exception {
@@ -35,7 +38,7 @@ public class NettyServer {
         bootstrap.group(bossGroup, workerGroup)
                  .channel(NioServerSocketChannel.class)
                  .handler(new LoggingHandler(LogLevel.INFO))
-                 .childHandler(new ServerInitializer(lobbyManager, gameLoopManager, leaderboardManager));
+                  .childHandler(new ServerInitializer(null, lobbyManager, gameLoopManager, leaderboardManager, antiCheatValidator));
 
         gameChannel = bootstrap.bind(gamePort).sync();
         logger.info("Game server started on port {}", gamePort);

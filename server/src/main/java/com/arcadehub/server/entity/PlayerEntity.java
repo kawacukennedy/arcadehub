@@ -23,12 +23,26 @@ public class PlayerEntity {
     @Column(name = "last_login")
     private Instant lastLogin;
 
+    @Column(nullable = false)
+    private int wins = 0;
+
+    @Column(nullable = false)
+    private int losses = 0;
+
     // Constructors
     public PlayerEntity() {
     }
 
     public PlayerEntity(String username) {
         this.username = username;
+    }
+
+    public PlayerEntity(String username, int elo, int wins, int losses, Instant createdAt) {
+        this.username = username;
+        this.elo = elo;
+        this.wins = wins;
+        this.losses = losses;
+        this.createdAt = createdAt;
     }
 
     // Getters and Setters
@@ -62,6 +76,12 @@ public class PlayerEntity {
     public Instant getLastLogin() { return lastLogin; }
     public void setLastLogin(Instant lastLogin) { this.lastLogin = lastLogin; }
 
+    public int getWins() { return wins; }
+    public void setWins(int wins) { this.wins = wins; }
+
+    public int getLosses() { return losses; }
+    public void setLosses(int losses) { this.losses = losses; }
+
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) {
@@ -72,11 +92,13 @@ public class PlayerEntity {
     @Override
     public String toString() {
         return "PlayerEntity{" +
-               "id=" + id +
-               ", username='" + username + "'" +
-               ", elo=" + elo +
-               ", createdAt=" + createdAt +
-               ", lastLogin=" + lastLogin +
-               '}';
+                "id=" + id +
+                ", username='" + username + "'" +
+                ", elo=" + elo +
+                ", wins=" + wins +
+                ", losses=" + losses +
+                ", createdAt=" + createdAt +
+                ", lastLogin=" + lastLogin +
+                '}';
     }
 }

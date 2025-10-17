@@ -40,7 +40,6 @@ public class MainApp extends Application {
 
         // Initialize GameRenderer (placeholder)
         GameRenderer gameRenderer = new GameRenderer(null, null); // TODO: Proper init
-        ClientHandler.setGameRenderer(gameRenderer);
 
         // Initialize InputHandler
         InputHandler inputHandler = new InputHandler(scene, networkManager, gameRenderer);

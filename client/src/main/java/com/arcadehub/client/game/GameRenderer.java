@@ -30,7 +30,7 @@ public class GameRenderer {
         GameState state = clientState.getPredictedState();
         if (state != null) {
             // Render based on predicted state
-            System.out.println("Rendering predicted state at tick: " + state.getTick());
+            System.out.println("Rendering predicted state at tick: " + state.getTickId());
         }
     }
 
@@ -40,20 +40,12 @@ public class GameRenderer {
     public void renderSnake() {
         batch.begin();
         // Placeholder: Render snake heads
-        for (Snake snake : snakes.values()) {
-            // Draw snake head (e.g., batch.draw(snakeHeadTexture, snake.getHeadPosition().getX(), snake.getHeadPosition().getY());)
-            System.out.println("Rendering snake head");
-        }
+        // TODO: Implement rendering
+        System.out.println("Rendering snake head");
         // Placeholder: Render snake bodies
-        for (Snake snake : snakes.values()) {
-            // Draw snake body segments
-            System.out.println("Rendering snake body");
-        }
+        System.out.println("Rendering snake body");
         // Placeholder: Render food items
-        for (Food food : foodItems) {
-            // Draw food (e.g., batch.draw(foodTexture, food.getPosition().getX(), food.getPosition().getY());)
-            System.out.println("Rendering food");
-        }
+        System.out.println("Rendering food");
         // Placeholder: Draw particle effects (e.g., for eating food)
         drawParticles(new Position(0f,0f), 10, 1.0f); // Example particle effect
         batch.end();
@@ -65,15 +57,9 @@ public class GameRenderer {
     public void renderPong() {
         batch.begin();
         // Placeholder: Render pong ball
-        if (pongBall != null) {
-            // Draw pong ball (e.g., batch.draw(ballTexture, pongBall.getPosition().getX(), pongBall.getPosition().getY());)
-            System.out.println("Rendering pong ball");
-        }
+        System.out.println("Rendering pong ball");
         // Placeholder: Render paddles
-        for (Paddle paddle : paddles.values()) {
-            // Draw paddle (e.g., batch.draw(paddleTexture, paddle.getPosition().getX(), paddle.getPosition().getY());)
-            System.out.println("Rendering paddle");
-        }
+        System.out.println("Rendering paddle");
         // Placeholder: Render collision animations
         // drawCollisionAnimation();
         batch.end();
@@ -84,7 +70,7 @@ public class GameRenderer {
      */
     public void updatePositions(GameState state) {
         clientState.reconcile(state);
-        System.out.println("Reconciled with server tick: " + state.getTick());
+        System.out.println("Reconciled with server tick: " + state.getTickId());
     }
 
     public void applyLocalInput(String username, String action, int tick) {

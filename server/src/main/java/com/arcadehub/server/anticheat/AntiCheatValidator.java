@@ -1,6 +1,6 @@
 package com.arcadehub.server.anticheat;
 
-import com.arcadehub.shared.InputPacket;
+import com.arcadehub.shared.Packet;
 import com.arcadehub.shared.Player;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +17,7 @@ public class AntiCheatValidator {
     private final Map<String, Integer> inputCount = new ConcurrentHashMap<>();
     private final Map<String, Integer> violationPoints = new ConcurrentHashMap<>();
 
-    public boolean validateInput(Player player, InputPacket inputPacket) {
+    public boolean validateInput(Player player, Packet inputPacket) {
         // Validate input rate
         long currentTime = System.currentTimeMillis();
         String username = player.getUsername();

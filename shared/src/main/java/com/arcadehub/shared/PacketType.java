@@ -1,6 +1,10 @@
 package com.arcadehub.shared;
 
 public enum PacketType {
+    JOIN_LOBBY,
+    LOBBY_UPDATE,
+    LEADERBOARD_REQUEST,
+    LEADERBOARD_RESPONSE,
     JOIN_REQUEST,
     JOIN_RESPONSE,
     LEAVE,

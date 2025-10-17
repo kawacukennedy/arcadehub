@@ -4,8 +4,10 @@ import com.arcadehub.client.network.NetworkClient;
 import com.arcadehub.client.game.GameRenderer;
 import com.arcadehub.shared.InputAction;
 import com.arcadehub.shared.Packet;
+import com.arcadehub.shared.PacketType;
 import javafx.scene.Scene;
 import javafx.scene.input.KeyCode;
+import java.util.Map;
 
 /**
  * Maps keys to InputAction, throttles inputs, attaches tick numbers.
@@ -34,7 +36,7 @@ public class InputHandler {
             if (action != null) {
                 // Create packet and send
                 Packet packet = new Packet();
-                packet.type = com.arcadehub.shared.PacketType.INPUT;
+                packet.type = PacketType.INPUT;
                 packet.payload = Map.of("action", action.name(), "tick", 0); // TODO: proper tick
                 networkClient.sendPacket(packet);
             }
