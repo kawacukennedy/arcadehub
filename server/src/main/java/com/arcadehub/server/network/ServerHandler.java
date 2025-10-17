@@ -11,6 +11,7 @@ import com.arcadehub.server.leaderboard.LeaderboardManager;
 import com.arcadehub.server.game.AntiCheatValidator;
 import com.arcadehub.server.game.GameLoopManager;
 import com.arcadehub.server.lobby.LobbyManager;
+import com.arcadehub.server.ServerInitializer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -98,14 +99,14 @@ public class ServerHandler extends SimpleChannelInboundHandler<Packet> {
             case CHAT:
                 if (username != null && lobbyId != null) {
                     // Broadcast chat message to all clients in the lobby
-                    broadcastPacketToLobby(lobbyId, basePacket);
+                    broadcastPacketToLobby(lobbyId, packet);
                 }
                 break;
             case HEARTBEAT:
                 // Acknowledge heartbeat (no action needed for now, connection is kept alive)
                 break;
             case LEADERBOARD_REQUEST:
-                int limit = (Integer) basePacket.payload.get("limit");
+                int limit = (Integer) packet.payload.get("limit");
                 List<PlayerEntity> topPlayerEntities = leaderboardManager.getTopPlayers(limit);
                 List<Player> topPlayers = topPlayerEntities.stream()
                         .map(pe -> new Player(pe.getId(), pe.getUsername(), pe.getElo(), pe.getWins(), pe.getLosses(), pe.getLastLogin()))
@@ -127,12 +128,7 @@ public class ServerHandler extends SimpleChannelInboundHandler<Packet> {
     }
 
     private void sendPacketToClient(Channel channel, Packet packet) {
-        try {
-            String json = objectMapper.writeValueAsString(packet);
-            channel.writeAndFlush(json + "\n");
-        } catch (Exception e) {
-            System.err.println("Error sending packet to client: " + e.getMessage());
-        }
+        channel.writeAndFlush(packet);
     }
 
     private void broadcastPacketToLobby(UUID lobbyId, Packet packet) {
